@@ -72,7 +72,7 @@ function AboutPage() {
 
             <aside className="border border-border bg-muted/35 p-5">
               <img
-                src="/jackie-avatar.jpg"
+                src="/avatar.jpg"
                 alt="dingzijiao"
                 className="aspect-square w-full object-cover"
               />
