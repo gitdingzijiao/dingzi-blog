@@ -8,7 +8,14 @@
 
 @theme inline {
   --font-heading: var(--font-sans);
-  --font-sans: "Inter Variable", sans-serif;
+  --font-sans: "Inter Variable", "Noto Sans Tibetan", "Microsoft Himalaya", "Kailasa", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+/* 藏文内容专用字体（确保所有设备正确显示） */
+[lang="bo"],
+.prose *:lang(bo),
+.prose [lang="bo"] {
+  font-family: "Noto Sans Tibetan", "Microsoft Himalaya", "Kailasa", sans-serif;
 }
 
 @layer base {
