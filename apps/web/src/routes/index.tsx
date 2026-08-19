@@ -861,7 +861,7 @@ function getHomeCopy(locale: SupportedLocale) {
   if (locale === "zh") {
     return {
       eyebrow: "个人博客内容系统 · Cloudflare 托管 · 自动化部署",
-      heroTitle: "搭建你的永久精神家园",
+      heroTitle: "འགྲོ་དགོས་པའི་ལམ་དེ་བདེ་བར་སྨོན།།\nསེམས་བསམ་པའི་དོན་དེ་འགྲུབ་པར་ཤོག༎",
       heroBody:
         "01mvp-blog-starter 是一套 Cloudflare 原生的个人博客内容系统。后台、评论、图床、RSS 开箱即用，初始化流程可以从配置一路跑到上线。",
       primaryCta: "开始 AI 建站",
