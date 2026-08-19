@@ -141,6 +141,16 @@ Use the `01mvp-blog` Skill for site creation and OpenAPI-based maintenance. Clou
 
 If you do not want to install the Skill, copy the prompt in [AI Setup](./apps/web/content/docs/ai-setup.md) into your AI agent. The Skill is still recommended because setup commands, Cloudflare provisioning, and verification checks can be updated over time.
 
+## Changelog
+
+### 2026-08-19
+- Initialized git repo and pushed to GitHub ([gitdingzijiao/dingzi-blog](https://github.com/gitdingzijiao/dingzi-blog))
+- Updated the About page with personal blog info (钉子の飞机 / 阿丁交 / 2104362966@qq.com / GitHub link)
+- Replaced site avatar with a personal photo (`apps/web/public/avatar.jpg`)
+- Added Tibetan font support: global font stack now includes Noto Sans Tibetan / Microsoft Himalaya / Kailasa; `lang="bo"` content uses a dedicated Tibetan font family; added CJK fallbacks (PingFang SC / Microsoft YaHei)
+- Homepage hero title (Chinese locale) replaced with a Tibetan verse
+- Production Worker version: `b844dd67-3228-40d3-9405-6439168e71f9`
+
 ## License
 
 MIT. See [LICENSE](./LICENSE).

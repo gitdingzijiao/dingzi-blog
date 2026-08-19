@@ -141,6 +141,16 @@ npx skills@latest add 01MVP/blog-starter --skill 01mvp-blog --agent codex --yes
 
 如果不想安装 Skill，也可以复制 [AI 初始化建站](./apps/web/content/docs/ai-setup.zh.md) 里的 Prompt 给 AI。推荐优先使用 Skill，因为后续初始化命令、Cloudflare 资源创建和验收清单可以随 Skill 更新。
 
+## 更新日志
+
+### 2026-08-19
+- 初始化 git 仓库并推送到 GitHub（[gitdingzijiao/dingzi-blog](https://github.com/gitdingzijiao/dingzi-blog)）
+- 更新「关于」页为个人博客信息（钉子の飞机 / 阿丁交 / 邮箱 2104362966@qq.com / GitHub 链接）
+- 更换站点头像为个人照片（`apps/web/public/avatar.jpg`）
+- 添加藏文字体支持：全局字体栈加入 Noto Sans Tibetan / Microsoft Himalaya / Kailasa，`lang="bo"` 内容使用藏文字体族，中文补充 PingFang SC / Microsoft YaHei 回退
+- 首页 hero 标题（中文语言版）改为藏文偈颂
+- 生产 Worker 部署版本：`b844dd67-3228-40d3-9405-6439168e71f9`
+
 ## License
 
 MIT. See [LICENSE](./LICENSE).
