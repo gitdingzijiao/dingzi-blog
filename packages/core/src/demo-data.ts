@@ -1,7 +1,7 @@
 import type { Asset, Comment, Post, Series, SiteSettings, Tag } from "./types";
 
 export const siteSettings: SiteSettings = {
-  name: "01MVP Blog Starter",
+  name: "Ding Blog",
   description:
     "A Cloudflare-native personal site for articles, videos, durable notes, and API-assisted publishing.",
   url: "https://your-domain.example",
