@@ -5,7 +5,6 @@ import { ArrowRightIcon, ExternalLinkIcon, MailIcon, SparklesIcon } from "lucide
 
 import { SiteShell } from "#/components/site-shell";
 import { $getAboutPageData } from "#/lib/cms-server";
-import { getDocsUrl } from "#/lib/docs-i18n";
 import { getCurrentLocale } from "#/lib/i18n";
 
 export const Route = createFileRoute("/about")({
@@ -16,14 +15,14 @@ export const Route = createFileRoute("/about")({
     return {
       meta: [
         {
-          title: locale === "zh" ? "关于 01MVP 和 Jackie" : "About 01MVP and Jackie",
+          title: locale === "zh" ? "关于 钉子の飞机" : "About Dingzi Blog",
         },
         {
           name: "description",
           content:
             locale === "zh"
-              ? "了解 01MVP 的 AI 产品实战方法，以及 MakerJackie 的项目背景。"
-              : "Learn about the 01MVP practical AI product method and MakerJackie's background.",
+              ? "钉子の飞机是阿丁交的个人博客，记录技术学习、生活思考与有趣的项目。"
+              : "Dingzi's personal blog about tech learning, life thoughts, and fun projects.",
         },
       ],
     };
@@ -36,7 +35,6 @@ function AboutPage() {
   const locale = getCurrentLocale();
   const siteSettings = localizeSiteSettings(data.siteSettings, locale);
   const copy = getAboutCopy(locale);
-  const docsHref = getDocsUrl([], locale);
 
   return (
     <SiteShell siteSettings={siteSettings}>
@@ -55,14 +53,14 @@ function AboutPage() {
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
                 <Button
-                  render={<a href={docsHref} aria-label={copy.primaryAction} />}
+                  render={<a href="/blog" aria-label={copy.primaryAction} />}
                   nativeButton={false}
                 >
                   {copy.primaryAction}
                   <ArrowRightIcon />
                 </Button>
                 <Button
-                  render={<a href="https://makerjackie.com" aria-label={copy.secondaryAction} />}
+                  render={<a href="https://github.com/gitdingzijiao" aria-label={copy.secondaryAction} />}
                   variant="outline"
                   nativeButton={false}
                 >
@@ -75,11 +73,11 @@ function AboutPage() {
             <aside className="border border-border bg-muted/35 p-5">
               <img
                 src="/jackie-avatar.jpg"
-                alt="MakerJackie"
+                alt="dingzijiao"
                 className="aspect-square w-full object-cover"
               />
               <div className="mt-5">
-                <p className="text-sm font-semibold text-link uppercase">MakerJackie</p>
+                <p className="text-sm font-semibold text-link uppercase">dingzijiao</p>
                 <p className="mt-2 text-2xl font-semibold">{copy.profileTitle}</p>
                 <p className="mt-3 text-sm leading-6 text-muted-foreground">{copy.profileBody}</p>
               </div>
@@ -131,17 +129,17 @@ function AboutPage() {
 
             <div className="mt-8 flex flex-wrap items-center gap-3 border-t border-border pt-6">
               <a
-                href="mailto:hi@01mvp.com"
+                href="mailto:2104362966@qq.com"
                 className="inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-link hover:underline"
               >
                 <MailIcon className="size-4" />
-                hi@01mvp.com
+                2104362966@qq.com
               </a>
               <a
-                href="https://x.com/makerjackie"
+                href="https://github.com/gitdingzijiao"
                 className="inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-link hover:underline"
               >
-                X / Twitter
+                GitHub
                 <ExternalLinkIcon className="size-4" />
               </a>
             </div>
@@ -155,47 +153,48 @@ function AboutPage() {
 function getAboutCopy(locale: ReturnType<typeof getCurrentLocale>) {
   if (locale === "zh") {
     return {
-      eyebrow: "关于 01MVP",
-      title: "把模糊想法，做成能上线的小产品。",
+      eyebrow: "关于本站",
+      title: "钉子の飞机的个人博客",
       description:
-        "01MVP 是 Jackie 持续整理的 AI 产品实战手册。它关注从选择问题、搭建第一版、上线验证，到根据反馈继续迭代的完整路径。",
-      primaryAction: "开始阅读手册",
-      secondaryAction: "查看作品集",
-      profileTitle: "独立开发者，前 AI 算法工程师",
-      profileBody: "Jackie 是周周黑客松社区发起人，也长期记录 AI 创作、产品实验和可复用模板。",
-      whyEyebrow: "方法",
-      whyTitle: "这套手册强调什么",
+        "这里是阿丁交（dingzijiao）的个人博客，记录技术学习、生活思考与有趣的项目。hallo啊盆有，欢迎来做客！",
+      primaryAction: "阅读博客",
+      secondaryAction: "我的 GitHub",
+      profileTitle: "阿丁交 · 独立博客作者",
+      profileBody:
+        "一枚热爱折腾的开发者，用 Cloudflare 原生技术栈搭建了这座小站，持续记录学习与实践的足迹。",
+      whyEyebrow: "理念",
+      whyTitle: "这个博客写什么",
       principles: [
         {
-          title: "先做出来",
-          description: "先用一个小项目建立手感，再通过上线后的反馈判断下一步。",
+          title: "记录与分享",
+          description: "把学习过程和踩坑经验写下来，既为自己复盘，也为后来者指路。",
         },
         {
-          title: "少踩坑",
-          description: "优先讲值得先学、能直接上手、能被真实项目验证的工具和方法。",
+          title: "动手实践",
+          description: "优先写真实项目里验证过的方法，不空谈理论。",
         },
         {
-          title: "面向交付",
-          description: "把 Demo 作为阶段检查点，继续推进到发布、反馈和下一轮迭代。",
+          title: "持续更新",
+          description: "慢慢写、长期写，把博客当作自己的数字花园。",
         },
       ],
       paths: [
         {
           eyebrow: "Start",
-          title: "读 01MVP 手册",
-          description: "按从想法到上线的路径建立完整工作流。",
-          href: getDocsUrl([], "zh"),
+          title: "阅读文章",
+          description: "浏览博客里最新的技术笔记和生活随笔。",
+          href: "/blog",
         },
         {
           eyebrow: "Work",
-          title: "看 MakerJackie 作品",
-          description: "查看 Jackie 做过的产品、公开实验和长期项目。",
-          href: "https://makerjackie.com",
+          title: "我的 GitHub",
+          description: "查看我的开源项目和代码仓库。",
+          href: "https://github.com/gitdingzijiao",
         },
         {
-          eyebrow: "Template",
-          title: "回到博客模板",
-          description: "了解这个 Cloudflare 原生博客模板如何部署和维护。",
+          eyebrow: "Home",
+          title: "回到首页",
+          description: "了解更多关于这座小站的故事。",
           href: "/",
         },
       ],
@@ -203,52 +202,48 @@ function getAboutCopy(locale: ReturnType<typeof getCurrentLocale>) {
   }
 
   return {
-    eyebrow: "About 01MVP",
-    title: "Turning rough ideas into small products that can ship.",
+    eyebrow: "About this site",
+    title: "Dingzi's personal blog",
     description:
-      "01MVP is Jackie’s practical AI product handbook. It focuses on choosing a real problem, building the first version, launching, collecting feedback, and deciding what to do next.",
-    primaryAction: "Start reading",
-    secondaryAction: "View portfolio",
-    profileTitle: "Independent developer and former AI algorithm engineer",
+      "A personal blog by dingzijiao about tech learning, life thoughts, and fun side projects. Hello there, welcome!",
+    primaryAction: "Read the blog",
+    secondaryAction: "My GitHub",
+    profileTitle: "dingzijiao · independent blogger",
     profileBody:
-      "Jackie founded Hackathon Weekly and keeps publishing AI creation notes, product experiments, and reusable templates.",
-    whyEyebrow: "Method",
-    whyTitle: "What this handbook emphasizes",
+      "A developer who loves tinkering, built this site on the Cloudflare-native stack, and keeps documenting the journey.",
+    whyEyebrow: "Principles",
+    whyTitle: "What this blog is about",
     principles: [
       {
-        title: "Ship the first version",
-        description:
-          "Use a small project to build product muscle, then let real feedback guide the next step.",
+        title: "Record and share",
+        description: "Write down the learning process and pitfalls — for myself and for others.",
       },
       {
-        title: "Avoid the expensive detours",
-        description:
-          "Prioritize tools and methods that are worth learning early and can be used in real projects.",
+        title: "Hands-on first",
+        description: "Prefer methods proven in real projects over empty theory.",
       },
       {
-        title: "Stay close to delivery",
-        description:
-          "Treat the demo as a checkpoint, then move the work toward launch, feedback, and iteration.",
+        title: "Keep writing",
+        description: "Write slowly and consistently, treating the blog as a digital garden.",
       },
     ],
     paths: [
       {
         eyebrow: "Start",
-        title: "Read the 01MVP handbook",
-        description: "Follow the path from idea to launch and build a complete working loop.",
-        href: getDocsUrl([], "en"),
+        title: "Read articles",
+        description: "Browse the latest tech notes and life essays.",
+        href: "/blog",
       },
       {
         eyebrow: "Work",
-        title: "View MakerJackie projects",
-        description:
-          "Browse products, public experiments, and long-running projects Jackie has built.",
-        href: "https://makerjackie.com",
+        title: "My GitHub",
+        description: "Check out my open-source projects and repositories.",
+        href: "https://github.com/gitdingzijiao",
       },
       {
-        eyebrow: "Template",
-        title: "Return to the blog template",
-        description: "See how this Cloudflare-native blog template is deployed and maintained.",
+        eyebrow: "Home",
+        title: "Back to home",
+        description: "Learn more about the story of this little site.",
         href: "/",
       },
     ],
