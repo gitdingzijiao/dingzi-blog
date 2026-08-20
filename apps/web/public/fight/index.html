@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>拳击格斗 - Fight!</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0d0f1a;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 100vh; font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif; color: #e8ecff;
+    overflow: hidden; user-select: none;
+  }
+  h1 { font-size: 22px; letter-spacing: 6px; margin-bottom: 8px; color: #ffd97f; text-shadow: 0 0 14px rgba(255,217,127,.4); }
+  #hud { width: 720px; max-width: 96vw; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-weight: bold; }
+  .hp-wrap { flex: 1; height: 18px; background: #222; border-radius: 9px; overflow: hidden; position: relative; }
+  .hp { height: 100%; transition: width .2s; }
+  #hp1 { background: linear-gradient(90deg,#2f9bff,#5fd0ff); margin-right: 8px; }
+  #hp2 { background: linear-gradient(90deg,#ff4d5e,#ff8a5c); margin-left: 8px; }
+  .hp-wrap span { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #fff; text-shadow: 0 1px 2px #000; }
+  #msg { min-width: 90px; text-align: center; font-size: 14px; color: #ffd97f; }
+  canvas { background: linear-gradient(#141830 0%, #1a1f3a 55%, #2a2540 100%); border: 1px solid #334; border-radius: 8px; box-shadow: 0 0 30px rgba(60,120,255,.2); max-width: 96vw; }
+  #tip { margin-top: 10px; font-size: 13px; color: #8a93b5; text-align: center; line-height: 1.7; }
+  #tip b { color: #aeb9e8; }
+</style>
+</head>
+<body>
+
+<h1>🥊 拳击格斗</h1>
+<div id="hud">
+  <div class="hp-wrap" id="wrap1"><div class="hp" id="hp1"></div><span id="name1">玩家</span></div>
+  <div id="msg">开始</div>
+  <div class="hp-wrap" id="wrap2"><div class="hp" id="hp2"></div><span id="name2">电脑</span></div>
+</div>
+<canvas id="game" width="720" height="480"></canvas>
+<div id="tip"><b>玩家：</b>A / D 移动 · J 出拳 · 按回车重开<br><b>电脑：</b>AI 自动追击反击</div>
+
+<script>
+(function () {
+  'use strict';
+
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  const elHp1 = document.getElementById('hp1');
+  const elHp2 = document.getElementById('hp2');
+  const elMsg = document.getElementById('msg');
+
+  const GROUND = H - 60;
+
+  // 音效
+  let audioCtx = null;
+  function beep(freq, dur, type, vol) {
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.type = type || 'square'; o.frequency.value = freq;
+      g.gain.value = vol || 0.04;
+      g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur);
+      o.connect(g); g.connect(audioCtx.destination);
+      o.start(); o.stop(audioCtx.currentTime + dur);
+    } catch (e) {}
+  }
+
+  function makeFighter(x, facing, color, isCPU) {
+    return {
+      x, facing, color, isCPU,
+      hp: 100, speed: 170,
+      attackCd: 0, attackTime: 0,  // attackTime>0 表示出拳中
+      hitStun: 0, hurtFlash: 0,
+      win: false
+    };
+  }
+
+  let p1 = makeFighter(180, 1, '#4fd1ff', false);
+  let p2 = makeFighter(W - 180, -1, '#ff5d7a', true);
+  let state = 'fight';   // fight | over
+  let message = '开始！';
+  let msgTimer = 0;
+  let round = 1;
+  const keys = {};
+
+  const ATTACK_RANGE = 62;   // 攻击距离
+  const ATTACK_DMG = 12;
+  const ATTACK_CD = 0.45;    // 攻击冷却（秒）
+  const ATTACK_DUR = 0.18;   // 出拳持续时间
+  const HIT_STUN = 0.32;     // 受击硬直
+
+  function resetFight() {
+    p1 = makeFighter(180, 1, '#4fd1ff', false);
+    p2 = makeFighter(W - 180, -1, '#ff5d7a', true);
+    state = 'fight';
+    message = '第 ' + round + ' 回合';
+    msgTimer = 1.0;
+    updateHud();
+  }
+
+  function updateHud() {
+    elHp1.style.width = p1.hp + '%';
+    elHp2.style.width = p2.hp + '%';
+  }
+
+  // 面向判断：p1 在左 p2 在右，facing 1=右 -1=左
+  function tryAttack(attacker, defender) {
+    if (attacker.attackCd > 0 || attacker.attackTime > 0 || attacker.hitStun > 0) return;
+    const dist = Math.abs(defender.x - attacker.x);
+    const facingRight = defender.x > attacker.x;
+    if (dist <= ATTACK_RANGE && facingRight === (attacker.facing === 1)) {
+      attacker.attackTime = ATTACK_DUR;
+      attacker.attackCd = ATTACK_CD;
+      beep(300, 0.08, 'square', 0.05);
+      // 攻击判定（出拳瞬间）
+      setTimeout(() => {
+        if (state !== 'fight') return;
+        if (Math.abs(defender.x - attacker.x) <= ATTACK_RANGE + 8) {
+          defender.hp -= ATTACK_DMG;
+          defender.hitStun = HIT_STUN;
+          defender.hurtFlash = 0.18;
+          beep(120, 0.15, 'sawtooth', 0.06);
+          // 击退
+          defender.x += (defender.x > attacker.x ? 1 : -1) * 14;
+          defender.x = clamp(defender.x, 40, W - 40);
+          if (defender.hp <= 0) {
+            defender.hp = 0;
+            endRound(attacker);
+          }
+          updateHud();
+        }
+      }, 60);
+    }
+  }
+
+  function endRound(winner) {
+    state = 'over';
+    winner.win = true;
+    message = winner.isCPU ? '电脑获胜！' : '你赢了！';
+    msgTimer = 3;
+    beep(winner.isCPU ? 180 : 520, 0.4, 'square', 0.08);
+  }
+
+  function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+
+  // ── AI：追击 + 攻击 + 偶尔后退 ──
+  let aiThink = 0;
+  function aiUpdate(dt) {
+    const me = p2, foe = p1;
+    if (me.hitStun > 0 || me.attackTime > 0) return;
+    const dist = foe.x - me.x;
+    const abs = Math.abs(dist);
+    aiThink -= dt;
+    if (aiThink <= 0) {
+      aiThink = 0.12 + Math.random() * 0.15;
+      if (abs > ATTACK_RANGE + 10) {
+        me.x += Math.sign(dist) * me.speed * dt;
+      } else if (abs < 46) {
+        me.x -= Math.sign(dist) * me.speed * 0.55 * dt;  // 后退
+      } else if (Math.random() < 0.55) {
+        tryAttack(me, foe);
+      }
+    }
+    me.x = clamp(me.x, 40, W - 40);
+  }
+
+  // ── 更新 ──
+  function update(dt) {
+    if (state !== 'fight') return;
+
+    // 玩家输入
+    if (p1.hitStun <= 0 && p1.attackTime <= 0) {
+      if (keys['KeyA'] || keys['ArrowLeft']) p1.x -= p1.speed * dt;
+      if (keys['KeyD'] || keys['ArrowRight']) p1.x += p1.speed * dt;
+      if (keys['KeyJ'] || keys['Space']) tryAttack(p1, p2);
+      p1.x = clamp(p1.x, 40, W - 40);
+    }
+
+    aiUpdate(dt);
+
+    // 面向（只在非攻击时）
+    if (p1.attackTime <= 0) p1.facing = p2.x > p1.x ? 1 : -1;
+    if (p2.attackTime <= 0) p2.facing = p1.x > p2.x ? 1 : -1;
+
+    // 计时器
+    for (const f of [p1, p2]) {
+      if (f.attackCd > 0) f.attackCd -= dt;
+      if (f.attackTime > 0) f.attackTime -= dt;
+      if (f.hitStun > 0) f.hitStun -= dt;
+      if (f.hurtFlash > 0) f.hurtFlash -= dt;
+    }
+    if (msgTimer > 0) { msgTimer -= dt; if (msgTimer <= 0) message = ''; }
+    elMsg.textContent = message;
+  }
+
+  // ── 绘制角色 ──
+  function drawFighter(f) {
+    const flash = f.hurtFlash > 0;
+    ctx.save();
+    ctx.translate(f.x, GROUND);
+
+    const main = flash ? '#ffffff' : f.color;
+    const dark = flash ? '#dddddd' : shade(f.color, -40);
+
+    // 腿
+    ctx.fillStyle = dark;
+    ctx.fillRect(-9, -16, 8, 16);
+    ctx.fillRect(1, -16, 8, 16);
+
+    // 身体
+    ctx.fillStyle = main;
+    ctx.fillRect(-12, -44, 24, 30);
+
+    // 腰带
+    ctx.fillStyle = '#222';
+    ctx.fillRect(-12, -22, 24, 5);
+
+    // 头
+    ctx.fillStyle = flash ? '#ffffff' : '#ffd9a8';
+    ctx.beginPath();
+    ctx.arc(0, -52, 11, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 眼睛
+    ctx.fillStyle = '#111';
+    ctx.beginPath();
+    ctx.arc(f.facing * 4, -53, 1.8, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 出拳的手臂
+    const punching = f.attackTime > 0;
+    const armExtend = punching ? 26 : 0;
+    const armY = punching ? -38 : -36;
+    ctx.fillStyle = main;
+    ctx.fillRect(f.facing * (10 + armExtend * 0.5) - (f.facing > 0 ? 6 : 0), armY, 14 + armExtend * 0.8, 9);
+    // 拳套
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(f.facing * (22 + armExtend), armY + 4.5, 6, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  function shade(hex, amt) {
+    const n = parseInt(hex.slice(1), 16);
+    const r = clamp((n >> 16) + amt, 0, 255), g = clamp(((n >> 8) & 0xff) + amt, 0, 255), b = clamp((n & 0xff) + amt, 0, 255);
+    return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+
+    // 地面
+    ctx.fillStyle = '#1e2440';
+    ctx.fillRect(0, GROUND + 6, W, H - GROUND);
+    ctx.fillStyle = '#2c3355';
+    ctx.fillRect(0, GROUND, W, 2);
+
+    drawFighter(p1);
+    drawFighter(p2);
+
+    // 胜利/提示
+    if (state === 'over') {
+      ctx.fillStyle = 'rgba(0,0,0,0.5)';
+      ctx.fillRect(0, H / 2 - 55, W, 110);
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#ffd97f';
+      ctx.font = 'bold 36px "Segoe UI", "Microsoft YaHei", sans-serif';
+      ctx.fillText(message, W / 2, H / 2 - 12);
+      ctx.fillStyle = '#9fb3d8';
+      ctx.font = '16px "Segoe UI", "Microsoft YaHei", sans-serif';
+      ctx.fillText('按 回车 再来一局', W / 2, H / 2 + 28);
+    }
+
+    requestAnimationFrame(loop);
+  }
+
+  // ── 主循环 ──
+  let lastTime = 0;
+  function loop(t) {
+    const dt = Math.min(0.05, (t - lastTime) / 1000 || 0.016);
+    lastTime = t;
+    update(dt);
+    draw();
+  }
+
+  // ── 输入 ──
+  window.addEventListener('keydown', (e) => {
+    keys[e.code] = true;
+    if (e.code === 'Enter' && state === 'over') {
+      round++;
+      resetFight();
+    }
+    if (e.code === 'Space') e.preventDefault();
+  });
+  window.addEventListener('keyup', (e) => { keys[e.code] = false; });
+
+  // ── 启动 ──
+  resetFight();
+  updateHud();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

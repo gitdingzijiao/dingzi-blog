@@ -43,6 +43,13 @@ function getProjects(locale: ReturnType<typeof getCurrentLocale>): readonly Proj
   if (locale === "zh") {
     return [
       {
+        name: "拳击格斗（Fight!）",
+        description: "纯前端 Canvas 格斗小游戏：与电脑 AI 实时对打，出拳判定、受击硬直、血条对战。几十 KB，秒开即玩。",
+        tags: ["HTML5", "Canvas", "游戏"],
+        href: "/fight/",
+        status: "live",
+      },
+      {
         name: "小人地图行走（DingGame）",
         description: "用 Godot 开发的 2D 行走小游戏：无限生成地图、金币收集、相机跟随。支持 Windows / Android。",
         tags: ["Godot", "GDScript", "游戏"],
@@ -52,6 +59,13 @@ function getProjects(locale: ReturnType<typeof getCurrentLocale>): readonly Proj
   }
 
   return [
+    {
+      name: "Fight! — Boxing Game",
+      description: "A lightweight Canvas fighting game: fight the AI in real time with punch detection, hit stun, and health bars. A few dozen KB, instant to load.",
+      tags: ["HTML5", "Canvas", "Game"],
+      href: "/fight/",
+      status: "live",
+    },
     {
       name: "DingGame — Walk the Map",
       description: "A Godot 2D walking game with procedurally generated endless maps, coin collection, and camera follow. Windows / Android.",
