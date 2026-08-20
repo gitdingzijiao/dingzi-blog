@@ -13,6 +13,7 @@ import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as SitemapPostsDotxmlRouteImport } from './routes/sitemap-posts[.]xml'
 import { Route as RssDotxmlRouteImport } from './routes/rss[.]xml'
 import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
+import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as OpenapiDotjsonRouteImport } from './routes/openapi[.]json'
 import { Route as FeedDotxmlRouteImport } from './routes/feed[.]xml'
 import { Route as DemoRouteImport } from './routes/demo'
@@ -123,6 +124,11 @@ const RssDotxmlRoute = RssDotxmlRouteImport.update({
 const RobotsDottxtRoute = RobotsDottxtRouteImport.update({
   id: '/robots.txt',
   path: '/robots.txt',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProjectsRoute = ProjectsRouteImport.update({
+  id: '/projects',
+  path: '/projects',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OpenapiDotjsonRoute = OpenapiDotjsonRouteImport.update({
@@ -596,6 +602,7 @@ export interface FileRoutesByFullPath {
   '/demo': typeof DemoRoute
   '/feed.xml': typeof FeedDotxmlRoute
   '/openapi.json': typeof OpenapiDotjsonRoute
+  '/projects': typeof ProjectsRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/rss.xml': typeof RssDotxmlRoute
   '/sitemap-posts.xml': typeof SitemapPostsDotxmlRoute
@@ -691,6 +698,7 @@ export interface FileRoutesByTo {
   '/demo': typeof DemoRoute
   '/feed.xml': typeof FeedDotxmlRoute
   '/openapi.json': typeof OpenapiDotjsonRoute
+  '/projects': typeof ProjectsRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/rss.xml': typeof RssDotxmlRoute
   '/sitemap-posts.xml': typeof SitemapPostsDotxmlRoute
@@ -786,6 +794,7 @@ export interface FileRoutesById {
   '/demo': typeof DemoRoute
   '/feed.xml': typeof FeedDotxmlRoute
   '/openapi.json': typeof OpenapiDotjsonRoute
+  '/projects': typeof ProjectsRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/rss.xml': typeof RssDotxmlRoute
   '/sitemap-posts.xml': typeof SitemapPostsDotxmlRoute
@@ -883,6 +892,7 @@ export interface FileRouteTypes {
     | '/demo'
     | '/feed.xml'
     | '/openapi.json'
+    | '/projects'
     | '/robots.txt'
     | '/rss.xml'
     | '/sitemap-posts.xml'
@@ -978,6 +988,7 @@ export interface FileRouteTypes {
     | '/demo'
     | '/feed.xml'
     | '/openapi.json'
+    | '/projects'
     | '/robots.txt'
     | '/rss.xml'
     | '/sitemap-posts.xml'
@@ -1072,6 +1083,7 @@ export interface FileRouteTypes {
     | '/demo'
     | '/feed.xml'
     | '/openapi.json'
+    | '/projects'
     | '/robots.txt'
     | '/rss.xml'
     | '/sitemap-posts.xml'
@@ -1170,6 +1182,7 @@ export interface RootRouteChildren {
   DemoRoute: typeof DemoRoute
   FeedDotxmlRoute: typeof FeedDotxmlRoute
   OpenapiDotjsonRoute: typeof OpenapiDotjsonRoute
+  ProjectsRoute: typeof ProjectsRoute
   RobotsDottxtRoute: typeof RobotsDottxtRoute
   RssDotxmlRoute: typeof RssDotxmlRoute
   SitemapPostsDotxmlRoute: typeof SitemapPostsDotxmlRoute
@@ -1255,6 +1268,13 @@ declare module '@tanstack/react-router' {
       path: '/robots.txt'
       fullPath: '/robots.txt'
       preLoaderRoute: typeof RobotsDottxtRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/projects': {
+      id: '/projects'
+      path: '/projects'
+      fullPath: '/projects'
+      preLoaderRoute: typeof ProjectsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/openapi.json': {
@@ -2120,6 +2140,7 @@ const rootRouteChildren: RootRouteChildren = {
   DemoRoute: DemoRoute,
   FeedDotxmlRoute: FeedDotxmlRoute,
   OpenapiDotjsonRoute: OpenapiDotjsonRoute,
+  ProjectsRoute: ProjectsRoute,
   RobotsDottxtRoute: RobotsDottxtRoute,
   RssDotxmlRoute: RssDotxmlRoute,
   SitemapPostsDotxmlRoute: SitemapPostsDotxmlRoute,

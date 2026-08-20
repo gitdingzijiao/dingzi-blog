@@ -114,9 +114,7 @@ function HomePage() {
 
 function ShelfHome({ posts, locale }: HomeViewProps) {
   const copy = getHomeCopy(locale);
-  const aiSetupDocsHref = getDocsUrl(["ai-setup"], locale);
-  const obsidianDocsHref = getDocsUrl(["obsidian"], locale);
-  const latestPosts = posts.slice(0, 3);
+  const latestPosts = posts.slice(0, 4);
 
   return (
     <div data-home-surface className="bg-background">
@@ -150,7 +148,7 @@ function ShelfHome({ posts, locale }: HomeViewProps) {
           </p>
           <div data-home-reveal style={getRevealStyle(270)} className="mt-8 flex flex-wrap gap-3">
             <Button
-              render={<a href={aiSetupDocsHref} aria-label={copy.primaryCta} />}
+              render={<Link to="/blog" />}
               nativeButton={false}
               size="lg"
               className="hover:-translate-y-0.5"
@@ -159,7 +157,7 @@ function ShelfHome({ posts, locale }: HomeViewProps) {
               <ArrowRightIcon />
             </Button>
             <Button
-              render={<Link to="/demo" />}
+              render={<Link to="/projects" />}
               variant="outline"
               nativeButton={false}
               size="lg"
@@ -174,187 +172,22 @@ function ShelfHome({ posts, locale }: HomeViewProps) {
 
       <LatestPostsSection copy={copy} latestPosts={latestPosts} locale={locale} />
 
-      {/* ── Your Own Corner ── */}
+      {/* ── 标签云 ── */}
       <section className="border-b border-border bg-muted/35">
-        <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8 lg:py-16 xl:px-12">
-          <div data-home-reveal className="grid gap-9 lg:grid-cols-[0.44fr_0.56fr]">
-            <div>
-              <p className="text-sm font-semibold text-link uppercase">{copy.ownershipEyebrow}</p>
-              <h2 className="mt-3 text-3xl leading-tight font-semibold text-balance">
-                {copy.ownershipTitle}
-              </h2>
-            </div>
-            <p className="self-end text-sm leading-7 text-muted-foreground">{copy.ownershipBody}</p>
-          </div>
-          <div className="mt-10 divide-y divide-border border-y border-border">
-            {copy.ownershipPoints.map((point, index) => (
-              <OwnershipRow key={point.title} point={point} index={index} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Core Features ── */}
-      <section className="border-b border-border bg-background">
-        <div className="mx-auto grid max-w-6xl gap-9 px-4 py-12 sm:px-6 lg:grid-cols-[0.42fr_0.58fr] lg:px-8 lg:py-16 xl:px-12">
-          <div data-home-reveal className="max-w-md">
-            <p className="text-sm font-semibold text-link uppercase">{copy.featuresEyebrow}</p>
-            <h2 className="mt-3 text-3xl leading-tight font-semibold text-balance">
-              {copy.featuresTitle}
-            </h2>
-            <p className="mt-4 text-sm leading-6 text-muted-foreground">{copy.featuresBody}</p>
-          </div>
-          <div className="divide-y divide-border border-y border-border">
-            {copy.features.map((feature, index) => (
-              <FeatureRow key={feature.title} feature={feature} index={index} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Obsidian ── */}
-      <section className="border-b border-border bg-muted/35">
-        <div className="mx-auto grid max-w-6xl gap-9 px-4 py-12 sm:px-6 lg:grid-cols-[0.44fr_0.56fr] lg:px-8 lg:py-16 xl:px-12">
-          <div data-home-reveal className="max-w-md">
-            <p className="text-sm font-semibold text-link uppercase">{copy.obsidianEyebrow}</p>
-            <h2 className="mt-3 text-3xl leading-tight font-semibold text-balance">
-              {copy.obsidianTitle}
-            </h2>
-            <p className="mt-4 text-sm leading-6 text-muted-foreground">{copy.obsidianBody}</p>
-            <div className="mt-6">
-              <Button
-                render={<a href={obsidianDocsHref} aria-label={copy.obsidianCta} />}
-                variant="outline"
-                nativeButton={false}
-                className="hover:-translate-y-0.5"
+        <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8 lg:py-12 xl:px-12">
+          <p className="text-sm font-semibold text-link uppercase">{copy.tagsEyebrow}</p>
+          <div className="mt-5 flex flex-wrap gap-2">
+            {copy.tags.map((tag) => (
+              <span
+                key={tag}
+                className="rounded-full border border-border bg-background px-3.5 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
               >
-                <FileTextIcon />
-                {copy.obsidianCta}
-              </Button>
-            </div>
-          </div>
-          <div className="divide-y divide-border border-y border-border">
-            {copy.obsidianPoints.map((feature, index) => (
-              <FeatureRow key={feature.title} feature={feature} index={index} />
+                {tag}
+              </span>
             ))}
           </div>
         </div>
       </section>
-
-      {/* ── Automation ── */}
-      <section className="border-b border-border bg-background">
-        <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8 lg:py-16 xl:px-12">
-          <div data-home-reveal className="grid gap-9 lg:grid-cols-[0.44fr_0.56fr]">
-            <div>
-              <p className="text-sm font-semibold text-link uppercase">{copy.skillEyebrow}</p>
-              <h2 className="mt-3 text-3xl leading-tight font-semibold text-balance">
-                {copy.skillTitle}
-              </h2>
-            </div>
-            <p className="self-end text-sm leading-7 text-muted-foreground">{copy.skillBody}</p>
-          </div>
-          <div className="mt-8 grid gap-px border border-border bg-border md:grid-cols-2">
-            {copy.setupPaths.map((path, index) => (
-              <SetupPathCard key={path.title} href={aiSetupDocsHref} path={path} index={index} />
-            ))}
-          </div>
-          <ol className="mt-10 divide-y divide-border border-y border-border">
-            {copy.skillSteps.map((step, index) => (
-              <li
-                key={step.number}
-                data-home-reveal
-                data-home-row
-                style={getRevealStyle(index * 55)}
-                className="grid gap-3 py-5 sm:grid-cols-[92px_minmax(0,1fr)]"
-              >
-                <span className="text-sm font-semibold text-muted-foreground">{step.number}</span>
-                <span>
-                  <span className="block text-lg font-semibold">{step.title}</span>
-                  <span className="mt-2 block text-sm leading-6 text-muted-foreground">
-                    {step.description}
-                  </span>
-                </span>
-              </li>
-            ))}
-          </ol>
-        </div>
-      </section>
-
-      {/* ── Merged: No Server + Free Quota ── */}
-      <section className="border-b border-border bg-muted/35">
-        <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8 lg:py-16 xl:px-12">
-          <p data-home-reveal className="text-sm font-semibold text-link uppercase">
-            {copy.freeEyebrow}
-          </p>
-          <h2
-            data-home-reveal
-            style={getRevealStyle(75)}
-            className="mt-3 max-w-2xl text-3xl leading-tight font-semibold text-balance"
-          >
-            {copy.freeTitle}
-          </h2>
-          <p
-            data-home-reveal
-            style={getRevealStyle(150)}
-            className="mt-4 max-w-2xl text-sm leading-7 text-muted-foreground"
-          >
-            {copy.freeBody}
-          </p>
-          <div className="mt-10 grid gap-px border border-border bg-border sm:grid-cols-3">
-            {copy.freeHighlights.map((h, index) => (
-              <FreeHighlightCard key={h.label} item={h} index={index} />
-            ))}
-          </div>
-          <div className="mt-10 divide-y divide-border border-y border-border">
-            {copy.quotaItems.map((item, index) => (
-              <QuotaRow key={item.service} item={item} index={index} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Tech Stack ── */}
-      <section className="border-b border-border bg-background">
-        <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8 lg:py-16 xl:px-12">
-          <p data-home-reveal className="text-sm font-semibold text-link uppercase">
-            {copy.techEyebrow}
-          </p>
-          <h2
-            data-home-reveal
-            style={getRevealStyle(75)}
-            className="mt-3 max-w-2xl text-3xl leading-tight font-semibold text-balance"
-          >
-            {copy.techTitle}
-          </h2>
-          <div className="mt-8 grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6">
-            {copy.techItems.map((item, index) => (
-              <TechBadge key={item.name} item={item} index={index} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Theme Presets ── */}
-      <section className="border-b border-border bg-muted/35">
-        <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8 lg:py-16 xl:px-12">
-          <div data-home-reveal className="grid gap-6 lg:grid-cols-[0.44fr_0.56fr] lg:items-end">
-            <div>
-              <p className="text-sm font-semibold text-link uppercase">{copy.themeEyebrow}</p>
-              <h2 className="mt-3 text-3xl leading-tight font-semibold text-balance">
-                {copy.themeTitle}
-              </h2>
-            </div>
-            <p className="max-w-2xl text-sm leading-6 text-muted-foreground">{copy.themeBody}</p>
-          </div>
-          <div className="mt-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            {copy.themePreviews.map((preview, index) => (
-              <ThemePreviewCard key={preview.themePreset} preview={preview} index={index} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <CreatorSection copy={copy} />
     </div>
   );
 }
@@ -860,12 +693,14 @@ function getHomeCopy(locale: SupportedLocale) {
 
   if (locale === "zh") {
     return {
-      eyebrow: "个人博客内容系统 · Cloudflare 托管 · 自动化部署",
+      eyebrow: "钉子的飞机 · 个人博客",
       heroTitle: "འགྲོ་དགོས་པའི་ལམ་དེ་བདེ་བར་སྨོན།།\nསེམས་བསམ་པའི་དོན་དེ་འགྲུབ་པར་ཤོག༎",
       heroBody:
-        "01mvp-blog-starter 是一套 Cloudflare 原生的个人博客内容系统。后台、评论、图床、RSS 开箱即用，初始化流程可以从配置一路跑到上线。",
-      primaryCta: "开始 AI 建站",
-      secondaryCta: "查看博客 Demo",
+        "Hi，我是阿丁交。独立博客作者，喜欢折腾技术、写代码、记录生活。这座小站用来沉淀文章、笔记和有趣的项目。hallo啊盆有，欢迎来做客！",
+      primaryCta: "阅读文章",
+      secondaryCta: "项目",
+      tagsEyebrow: "主题",
+      tags: ["独立开发", "AI", "Godot", "Cloudflare", "代码", "学习", "生活", "游戏"],
 
       // ── Why Free ──
       freeEyebrow: "免费边界",
@@ -1125,12 +960,14 @@ function getHomeCopy(locale: SupportedLocale) {
 
   // ── English ──
   return {
-    eyebrow: "Personal blog system · Cloudflare-hosted · automated deploy",
+    eyebrow: "Ding Blog · Personal Blog",
     heroTitle: "Build your permanent home on the internet",
     heroBody:
-      "01mvp-blog-starter is a Cloudflare-native personal blog system. Writing dashboard, comments, image hosting, and RSS ship out of the box, and the setup flow can take it from configuration to live deploy.",
-    primaryCta: "Start AI setup",
-    secondaryCta: "View blog demo",
+      "Hi, I'm dingzijiao. An independent blogger who loves tinkering with tech, writing code, and documenting life. This site holds my articles, notes, and fun projects. Hello there, welcome!",
+    primaryCta: "Read articles",
+    secondaryCta: "Projects",
+    tagsEyebrow: "Topics",
+    tags: ["Indie Dev", "AI", "Godot", "Cloudflare", "Coding", "Learning", "Life", "Games"],
 
     // ── Why Free ──
     freeEyebrow: "Cost boundary",
