@@ -54,6 +54,7 @@ import { Route as ApiImportZipRouteImport } from './routes/api/import/zip'
 import { Route as ApiImportMarkdownRouteImport } from './routes/api/import/markdown'
 import { Route as ApiImportHtmlRouteImport } from './routes/api/import/html'
 import { Route as ApiEmailUnsubscribeRouteImport } from './routes/api/email/unsubscribe'
+import { Route as ApiDrawGenerateRouteImport } from './routes/api/draw/generate'
 import { Route as ApiCommentAuthVerifyEmailRouteImport } from './routes/api/comment-auth/verify-email'
 import { Route as ApiCommentAuthSignupRouteImport } from './routes/api/comment-auth/signup'
 import { Route as ApiCommentAuthMeRouteImport } from './routes/api/comment-auth/me'
@@ -327,6 +328,11 @@ const ApiImportHtmlRoute = ApiImportHtmlRouteImport.update({
 const ApiEmailUnsubscribeRoute = ApiEmailUnsubscribeRouteImport.update({
   id: '/api/email/unsubscribe',
   path: '/api/email/unsubscribe',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiDrawGenerateRoute = ApiDrawGenerateRouteImport.update({
+  id: '/api/draw/generate',
+  path: '/api/draw/generate',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiCommentAuthVerifyEmailRoute =
@@ -662,6 +668,7 @@ export interface FileRoutesByFullPath {
   '/api/comment-auth/me': typeof ApiCommentAuthMeRoute
   '/api/comment-auth/signup': typeof ApiCommentAuthSignupRoute
   '/api/comment-auth/verify-email': typeof ApiCommentAuthVerifyEmailRoute
+  '/api/draw/generate': typeof ApiDrawGenerateRoute
   '/api/email/unsubscribe': typeof ApiEmailUnsubscribeRoute
   '/api/import/html': typeof ApiImportHtmlRoute
   '/api/import/markdown': typeof ApiImportMarkdownRoute
@@ -755,6 +762,7 @@ export interface FileRoutesByTo {
   '/api/comment-auth/me': typeof ApiCommentAuthMeRoute
   '/api/comment-auth/signup': typeof ApiCommentAuthSignupRoute
   '/api/comment-auth/verify-email': typeof ApiCommentAuthVerifyEmailRoute
+  '/api/draw/generate': typeof ApiDrawGenerateRoute
   '/api/email/unsubscribe': typeof ApiEmailUnsubscribeRoute
   '/api/import/html': typeof ApiImportHtmlRoute
   '/api/import/markdown': typeof ApiImportMarkdownRoute
@@ -854,6 +862,7 @@ export interface FileRoutesById {
   '/api/comment-auth/me': typeof ApiCommentAuthMeRoute
   '/api/comment-auth/signup': typeof ApiCommentAuthSignupRoute
   '/api/comment-auth/verify-email': typeof ApiCommentAuthVerifyEmailRoute
+  '/api/draw/generate': typeof ApiDrawGenerateRoute
   '/api/email/unsubscribe': typeof ApiEmailUnsubscribeRoute
   '/api/import/html': typeof ApiImportHtmlRoute
   '/api/import/markdown': typeof ApiImportMarkdownRoute
@@ -952,6 +961,7 @@ export interface FileRouteTypes {
     | '/api/comment-auth/me'
     | '/api/comment-auth/signup'
     | '/api/comment-auth/verify-email'
+    | '/api/draw/generate'
     | '/api/email/unsubscribe'
     | '/api/import/html'
     | '/api/import/markdown'
@@ -1045,6 +1055,7 @@ export interface FileRouteTypes {
     | '/api/comment-auth/me'
     | '/api/comment-auth/signup'
     | '/api/comment-auth/verify-email'
+    | '/api/draw/generate'
     | '/api/email/unsubscribe'
     | '/api/import/html'
     | '/api/import/markdown'
@@ -1143,6 +1154,7 @@ export interface FileRouteTypes {
     | '/api/comment-auth/me'
     | '/api/comment-auth/signup'
     | '/api/comment-auth/verify-email'
+    | '/api/draw/generate'
     | '/api/email/unsubscribe'
     | '/api/import/html'
     | '/api/import/markdown'
@@ -1230,6 +1242,7 @@ export interface RootRouteChildren {
   ApiCommentAuthMeRoute: typeof ApiCommentAuthMeRoute
   ApiCommentAuthSignupRoute: typeof ApiCommentAuthSignupRoute
   ApiCommentAuthVerifyEmailRoute: typeof ApiCommentAuthVerifyEmailRoute
+  ApiDrawGenerateRoute: typeof ApiDrawGenerateRoute
   ApiEmailUnsubscribeRoute: typeof ApiEmailUnsubscribeRoute
   ApiImportHtmlRoute: typeof ApiImportHtmlRoute
   ApiImportMarkdownRoute: typeof ApiImportMarkdownRoute
@@ -1555,6 +1568,13 @@ declare module '@tanstack/react-router' {
       path: '/api/email/unsubscribe'
       fullPath: '/api/email/unsubscribe'
       preLoaderRoute: typeof ApiEmailUnsubscribeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/draw/generate': {
+      id: '/api/draw/generate'
+      path: '/api/draw/generate'
+      fullPath: '/api/draw/generate'
+      preLoaderRoute: typeof ApiDrawGenerateRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/comment-auth/verify-email': {
@@ -2188,6 +2208,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiCommentAuthMeRoute: ApiCommentAuthMeRoute,
   ApiCommentAuthSignupRoute: ApiCommentAuthSignupRoute,
   ApiCommentAuthVerifyEmailRoute: ApiCommentAuthVerifyEmailRoute,
+  ApiDrawGenerateRoute: ApiDrawGenerateRoute,
   ApiEmailUnsubscribeRoute: ApiEmailUnsubscribeRoute,
   ApiImportHtmlRoute: ApiImportHtmlRoute,
   ApiImportMarkdownRoute: ApiImportMarkdownRoute,

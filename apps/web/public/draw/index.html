@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 智能绘图工具 · DingDraw</title>
+<link rel="stylesheet" href="/draw/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="logo">◆</div>
+    <div>
+      <h1>AI 智能绘图工具</h1>
+      <p>自然语言 → 可编辑流程图 / 架构图 / 思维导图</p>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <span id="engine" class="engine">DeepSeek Flash</span>
+    <span id="status" class="status">初始化中…</span>
+    <button id="exportBtn" class="ghost-btn" title="导出 SVG">导出 SVG</button>
+  </div>
+</header>
+
+<main class="layout">
+  <!-- 左：AI Agent 面板 -->
+  <aside class="panel">
+    <div class="panel-head">
+      <span class="dot"></span>
+      <h2>AI Agent</h2>
+    </div>
+
+    <div id="chat" class="chat">
+      <div class="msg ai">
+        <div class="bubble">
+          你好！用一句话描述你想要的图表，我来生成可编辑的 draw.io 图。<br>
+          生成后可以继续对话，让我修改。
+        </div>
+      </div>
+    </div>
+
+    <div class="quick">
+      <button data-prompt="画一个用户登录流程图，包含输入账号密码、校验、验证码分支、登录成功和失败">登录流程</button>
+      <button data-prompt="画一个微服务架构图，包含网关、用户服务、订单服务、支付服务、数据库和消息队列">微服务架构</button>
+      <button data-prompt="画一个产品开发思维导图，中心是产品，分支包括需求、设计、开发、测试、上线">思维导图</button>
+      <button data-prompt="画一个 CI/CD 部署流程图，包含代码提交、构建、测试、部署到预发、审批、生产发布">CI/CD 流程</button>
+    </div>
+
+    <form id="composer" class="composer">
+      <textarea id="input" rows="3" placeholder="描述图表，例如：画一个订单支付流程图…（Enter 发送，Shift+Enter 换行）"></textarea>
+      <button id="sendBtn" type="submit">生成图表</button>
+    </form>
+  </aside>
+
+  <!-- 右：draw.io 编辑器 -->
+  <section class="canvas-wrap">
+    <iframe
+      id="drawio"
+      title="draw.io editor"
+      src="https://embed.diagrams.net/?embed=1&proto=json&spin=1&libraries=1&noSaveBtn=1&noExitBtn=1&saveAndExit=0&dark=1&ui=kennedy">
+    </iframe>
+    <div id="overlay" class="overlay">
+      <div class="spinner"></div>
+      <p>正在加载 draw.io 编辑器…</p>
+    </div>
+  </section>
+</main>
+
+<script src="/draw/app.js"></script>
+</body>
+</html>

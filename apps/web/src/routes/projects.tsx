@@ -43,6 +43,13 @@ function getProjects(locale: ReturnType<typeof getCurrentLocale>): readonly Proj
   if (locale === "zh") {
     return [
       {
+        name: "AI 智能绘图工具（DingDraw）",
+        description: "用自然语言生成可编辑的流程图/架构图/思维导图。基于 draw.io 开源编辑器二次开发，DeepSeek 生成 draw.io 兼容 XML，支持连续对话修改与实时预览。",
+        tags: ["AI", "draw.io", "DeepSeek", "全栈"],
+        href: "/draw/",
+        status: "live",
+      },
+      {
         name: "拳击格斗（Fight!）",
         description: "纯前端 Canvas 格斗小游戏：与电脑 AI 实时对打，出拳判定、受击硬直、血条对战。几十 KB，秒开即玩。",
         tags: ["HTML5", "Canvas", "游戏"],
@@ -59,6 +66,13 @@ function getProjects(locale: ReturnType<typeof getCurrentLocale>): readonly Proj
   }
 
   return [
+    {
+      name: "DingDraw — AI Diagram Tool",
+      description: "Turn natural language into editable flowcharts, architecture diagrams, and mind maps. Built on the open-source draw.io editor; DeepSeek generates draw.io-compatible XML with continuous chat-based editing and live preview.",
+      tags: ["AI", "draw.io", "DeepSeek", "Full-stack"],
+      href: "/draw/",
+      status: "live",
+    },
     {
       name: "Fight! — Boxing Game",
       description: "A lightweight Canvas fighting game: fight the AI in real time with punch detection, hit stun, and health bars. A few dozen KB, instant to load.",
