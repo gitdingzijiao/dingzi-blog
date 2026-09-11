@@ -64,6 +64,13 @@ function getProjects(locale: ReturnType<typeof getCurrentLocale>): readonly Proj
         status: "live",
       },
       {
+        name: "藏文字母发音表",
+        description: "点击字母即发音的藏文字母学习页：30 辅音 + 4 元音全部为真人录音（安多藏语），支持听音练习、自己录音覆盖、隐藏转写自测。",
+        tags: ["HTML5", "Web Audio", "藏语", "学习工具"],
+        href: "/tibetan/",
+        status: "live",
+      },
+      {
         name: "小人地图行走（DingGame）",
         description: "用 Godot 开发的 2D 行走小游戏：无限生成地图、金币收集、相机跟随。支持 Windows / Android。",
         tags: ["Godot", "GDScript", "游戏"],
@@ -92,6 +99,13 @@ function getProjects(locale: ReturnType<typeof getCurrentLocale>): readonly Proj
       description: "A Tibetan village rebuilt in Blender from real DEM elevation and satellite imagery: 52 Tibetan houses, a golden-roofed temple, stupas and prayer flags, and 700 conifers. Orbit from above in the browser, or switch to a ground-level walk mode.",
       tags: ["Three.js", "Blender", "3D", "GIS"],
       href: "/village-map/",
+      status: "live",
+    },
+    {
+      name: "Tibetan Alphabet Pronunciation",
+      description: "Click any letter to hear it: all 30 consonants and 4 vowels are real human recordings (Amdo Tibetan), with a listening quiz, self-recording override, and hide-the-transliteration self-test.",
+      tags: ["HTML5", "Web Audio", "Tibetan", "Learning"],
+      href: "/tibetan/",
       status: "live",
     },
     {

@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>藏文字母发音表 · བོད་ཡིག་གསལ་བྱེད</title>
+<style>
+  :root {
+    --bg: #0e1116; --panel: #161b22; --panel2: #1c232c; --line: #2a3340;
+    --fg: #e6edf3; --dim: #8b98a8; --accent: #f0a020; --accent2: #ffd479;
+    --ok: #3fb950; --bad: #f85149;
+    --tib: 'Microsoft Himalaya', 'Noto Serif Tibetan', 'Jomolhari', 'Kailasa', serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--fg); min-height: 100vh;
+    font-family: 'Segoe UI', 'Microsoft YaHei', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 28px 20px 80px; }
+
+  header { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; flex-wrap: wrap; margin-bottom: 6px; }
+  h1 { font-size: 26px; font-weight: 700; letter-spacing: .5px; }
+  h1 .tib { font-family: var(--tib); font-size: 34px; color: var(--accent2); margin-right: 10px; vertical-align: -3px; }
+  .sub { color: var(--dim); font-size: 13px; margin-top: 6px; line-height: 1.7; }
+  .score { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px 14px; font-size: 13px; color: var(--dim); white-space: nowrap; }
+  .score b { color: var(--fg); font-size: 16px; }
+
+  #warn { display: none; margin: 14px 0 0; padding: 11px 14px; border-radius: 10px; font-size: 13px; line-height: 1.7;
+    background: #2a1f08; border: 1px solid #6b4d10; color: #ffd479; }
+  #warn.on { display: block; }
+  #warn code { background: #3a2c0d; padding: 1px 6px; border-radius: 4px; }
+
+  .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin: 18px 0 8px; }
+  button { font-family: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer;
+    background: var(--panel2); color: var(--fg); border: 1px solid var(--line);
+    border-radius: 9px; padding: 8px 14px; transition: .15s; white-space: nowrap; }
+  button:hover { border-color: var(--accent); color: var(--accent2); }
+  button.on { background: var(--accent); border-color: var(--accent); color: #1a1205; }
+  button:disabled { opacity: .45; cursor: default; }
+  .sep { width: 1px; height: 24px; background: var(--line); margin: 0 2px; }
+  .opt { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--dim); cursor: pointer; user-select: none; }
+  .opt input { accent-color: var(--accent); }
+  .slider { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--dim); }
+  .slider input { width: 92px; accent-color: var(--accent); }
+
+  h2 { font-size: 15px; font-weight: 600; color: var(--dim); margin: 26px 0 12px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  h2 .tib { font-family: var(--tib); font-size: 20px; color: var(--accent2); }
+  h2 .num { font-size: 12px; background: var(--panel2); border: 1px solid var(--line); border-radius: 20px; padding: 2px 9px; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 10px; }
+  .card { position: relative; background: var(--panel); border: 1.5px solid var(--line);
+    border-radius: 12px; padding: 14px 6px 10px; text-align: center; cursor: pointer;
+    transition: transform .12s, border-color .12s, background .12s; }
+  .card:hover { transform: translateY(-3px); border-color: #46536a; background: var(--panel2); }
+  .card .glyph { font-family: var(--tib); font-size: 46px; line-height: 1.15; color: var(--fg); }
+  .card .wylie { font-size: 12px; color: var(--accent2); margin-top: 2px; letter-spacing: .3px; }
+  .card .ipa { font-size: 11px; color: var(--dim); margin-top: 1px; }
+  .card .cn { font-size: 11px; color: #6f7d8f; margin-top: 1px; }
+  .card.playing { border-color: var(--accent); background: #241a08; box-shadow: 0 0 0 3px rgba(240,160,32,.18); }
+  .card.playing .glyph { color: var(--accent2); }
+  .card.right { border-color: var(--ok); background: #0e2412; }
+  .card.wrong { border-color: var(--bad); background: #2a1113; animation: shake .3s; }
+  @keyframes shake { 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+  .card .rec { position: absolute; top: 6px; right: 7px; font-size: 11px; opacity: .9; }
+  body.hide-wylie .wylie, body.hide-ipa .ipa, body.hide-cn .cn { visibility: hidden; }
+
+  .hint { font-size: 12.5px; color: var(--dim); line-height: 1.8; margin-top: 10px; }
+  .hint kbd { background: var(--panel2); border: 1px solid var(--line); border-radius: 5px; padding: 1px 6px; font-size: 11.5px; font-family: inherit; }
+  footer { margin-top: 34px; padding-top: 16px; border-top: 1px solid var(--line); color: #6b7686; font-size: 11.5px; line-height: 1.9; }
+  footer code { background: var(--panel2); border-radius: 4px; padding: 1px 5px; }
+  .toast { position: fixed; left: 50%; bottom: 34px; transform: translateX(-50%) translateY(20px);
+    background: var(--panel2); border: 1px solid var(--line); color: var(--fg);
+    padding: 10px 20px; border-radius: 10px; font-size: 13.5px; opacity: 0;
+    transition: .25s; pointer-events: none; box-shadow: 0 8px 30px rgba(0,0,0,.5); max-width: 90vw; text-align: center; }
+  .toast.on { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <h1><span class="tib">བོད་ཡིག</span>藏文字母发音表</h1>
+      <div class="sub">
+        点击任意字母即可听到发音 · 共 30 个辅音字母 + 4 个元音<br>
+        <span style="color:#5f6b7c">辅音 གསལ་བྱེད་སུམ་ཅུ &nbsp;·&nbsp; 元音 དབྱངས་བཞི</span>
+      </div>
+    </div>
+    <div class="score">得分 <b id="score">0</b> / <span id="total">0</span></div>
+  </header>
+
+  <div id="warn"></div>
+
+  <div class="toolbar">
+    <button id="btnAll">▶ 依次朗读</button>
+    <button id="btnStop" disabled>■ 停止</button>
+    <button id="btnQuiz">🎲 听音练习</button>
+    <div class="sep"></div>
+    <button id="btnRec">🎙 录音模式</button>
+    <button id="btnClearRec">🗑 清除录音</button>
+    <div class="sep"></div>
+    <div class="slider">发音
+      <select id="dialect">
+        <option value="real">安多 · 真人录音</option>
+        <option value="adx">安多 · AI 合成</option>
+        <option value="bod">卫藏（拉萨）· AI 合成</option>
+      </select>
+    </div>
+    <div class="sep"></div>
+    <div class="slider">速度 <input id="rate" type="range" min="60" max="120" value="100"><span id="rateVal">1.0×</span></div>
+    <div class="sep"></div>
+    <label class="opt"><input type="checkbox" id="optWylie" checked>威利转写</label>
+    <label class="opt"><input type="checkbox" id="optIpa" checked>国际音标</label>
+    <label class="opt"><input type="checkbox" id="optCn" checked>中文近似</label>
+  </div>
+
+  <h2><span class="tib">གསལ་བྱེད་སུམ་ཅུ</span> 三十辅音 <span class="num">30</span></h2>
+  <div class="grid" id="gridConsonants"></div>
+
+  <h2><span class="tib">དབྱངས་བཞི</span> 四个元音 <span class="num">4</span>
+    <span style="font-size:12px;font-weight:400;color:#5f6b7c">（独立写法 ཨི ཨུ ཨེ ཨོ；作符号时写作 ི ུ ེ ོ 附在辅音上，如 ཀི = ki）</span></h2>
+  <div class="grid" id="gridVowels"></div>
+
+  <div class="hint">
+    快捷键：<kbd>空格</kbd> 重播上一个 · <kbd>R</kbd> 随机播放 · <kbd>Esc</kbd> 退出练习 / 录音模式<br>
+    录音模式：点击字母 → 提示音后朗读 3 秒 → 自动保存到本机浏览器（不联网）。之后点该字母播放你自己的录音，<kbd>Shift</kbd>+点击可播放合成音。
+  </div>
+
+  <footer>
+    <b>发音全部为真人录音，无任何合成</b>：30 个辅音切自「安多语字母发音教程」录屏，
+    4 个元音（ཨི ཨུ ཨེ ཨོ）切自「15秒学会·安多藏语」录屏 —— 两段录屏中 App 都用红圈按朗读顺序逐格高亮，
+    本页按红圈位置自动定位时间窗切分（每字母 2 遍，取较清晰的一遍），只做首尾静音裁剪与音量归一化，
+    元音另做了高通滤波 + 谱减法降噪（原为手持拍摄）。<br>
+    AI 合成音（Meta MMS-TTS 藏语模型）作为对照保留在下拉框中；方言差异较大，
+    正式学习请以老师或母语者发音为准，也可用「🎙 录音模式」录下自己的读音替换。
+  </footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════ 字母数据 ══════════
+const CONSONANTS = [
+  ["ka","ཀ","ka","ka","卡","泰"],       ["kha","ཁ","kha","kʰa","卡（送气）","泰"],
+  ["ga","ག","ga","ɡa","嘎","印"],       ["nga","ང","nga","ŋa","阿（鼻音）","泰"],
+  ["ca","ཅ","ca","tɕa","加","泰"],      ["cha","ཆ","cha","tɕʰa","加（送气）","泰"],
+  ["ja","ཇ","ja","dʑa","贾","印"],      ["nya","ཉ","nya","ɲa","尼亚","西"],
+  ["ta","ཏ","ta","ta","达（不送气）","泰"], ["tha","ཐ","tha","tʰa","塔","泰"],
+  ["da","ད","da","da","达","印"],       ["na","ན","na","na","纳","泰"],
+  ["pa","པ","pa","pa","巴（不送气）","泰"], ["pha","ཕ","pha","pʰa","帕","泰"],
+  ["ba","བ","ba","ba","巴","印"],       ["ma","མ","ma","ma","玛","泰"],
+  ["tsa","ཙ","tsa","tsa","匝","尼"],    ["tsha","ཚ","tsha","tsʰa","擦","尼"],
+  ["dza","ཛ","dza","dza","杂","尼"],    ["wa","ཝ","wa","wa","瓦","泰"],
+  ["zha","ཞ","zha","ʑa","夏（浊）","波"], ["za","ཟ","za","za","萨（浊）","印"],
+  ["aa","འ","'a","ʔa","阿（喉塞）","泰"], ["ya","ཡ","ya","ja","亚","泰"],
+  ["ra","ར","ra","ra","惹","泰"],       ["la","ལ","la","la","拉","泰"],
+  ["sha","ཤ","sha","ɕa","夏","印"],     ["sa","ས","sa","sa","萨","泰"],
+  ["ha","ཧ","ha","ha","哈","泰"],       ["a","ཨ","a","a","阿","泰"],
+];
+const VOWELS = [
+  ["vi","ཨི","i","i","衣 · 符号 ི","泰"],
+  ["vu","ཨུ","u","u","乌 · 符号 ུ","泰"],
+  ["ve","ཨེ","e","e","诶 · 符号 ེ","泰"],
+  ["vo","ཨོ","o","o","哦 · 符号 ོ","泰"],
+];
+const ALL = [...CONSONANTS, ...VOWELS];
+
+const $ = (id) => document.getElementById(id);
+const toastEl = $('toast');
+let toastTimer;
+function toast(msg, ms = 2200) {
+  toastEl.textContent = msg;
+  toastEl.classList.add('on');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toastEl.classList.remove('on'), ms);
+}
+
+// ══════════ 渲染卡片 ══════════
+const cards = new Map();
+function makeCard(item) {
+  const [id, tib, wylie, ipa, cn] = item;
+  const el = document.createElement('div');
+  el.className = 'card';
+  el.dataset.id = id;
+  el.innerHTML = `<div class="rec" data-rec hidden>🎙</div>` +
+    `<div class="glyph">${tib}</div><div class="wylie">${wylie}</div>` +
+    `<div class="ipa">[${ipa}]</div><div class="cn">${cn}</div>`;
+  el.addEventListener('click', (e) => onCardClick(id, e.shiftKey));
+  cards.set(id, el);
+  return el;
+}
+CONSONANTS.forEach((it) => $('gridConsonants').appendChild(makeCard(it)));
+VOWELS.forEach((it) => $('gridVowels').appendChild(makeCard(it)));
+
+// 环境检查：file:// 下 IndexedDB / 麦克风不可用，给出明确提示
+if (location.protocol === 'file:') {
+  $('warn').className = 'on';
+  $('warn').innerHTML = '⚠️ 你正在用 <code>file://</code> 直接打开文件。发音可以播放，但“录音模式”会被浏览器禁用。' +
+    '建议改用本地服务访问：<code>node serve.mjs 3090</code> → <code>http://127.0.0.1:3090/tibetan-alphabet/</code>';
+}
+
+// ══════════ 录音存储（IndexedDB，失败自动退回内存）══════════
+const recUrls = new Map();      // id → objectURL（同步可读，保证在点击手势内直接开播）
+const memRec = new Map();
+let db = null, dbBroken = false;
+
+function openDB() {
+  return new Promise((resolve) => {
+    if (db) return resolve(db);
+    if (dbBroken || typeof indexedDB === 'undefined') return resolve(null);
+    try {
+      const req = indexedDB.open('tibetan-alphabet', 1);
+      req.onupgradeneeded = () => { try { req.result.createObjectStore('rec'); } catch (e) {} };
+      req.onsuccess = () => { db = req.result; resolve(db); };
+      req.onerror = () => { dbBroken = true; resolve(null); };
+      req.onblocked = () => { dbBroken = true; resolve(null); };
+    } catch (e) { dbBroken = true; resolve(null); }
+  });
+}
+async function recGetAll() {
+  const d = await openDB();
+  if (!d) return memRec;
+  return new Promise((resolve) => {
+    const out = new Map();
+    try {
+      const r = d.transaction('rec', 'readonly').objectStore('rec').openCursor();
+      r.onsuccess = () => {
+        const c = r.result;
+        if (c) { out.set(c.key, c.value); c.continue(); } else resolve(out);
+      };
+      r.onerror = () => resolve(memRec);
+    } catch (e) { resolve(memRec); }
+  });
+}
+async function recPut(id, blob) {
+  memRec.set(id, blob);
+  const d = await openDB();
+  if (!d) return;
+  try {
+    await new Promise((resolve) => {
+      const tx = d.transaction('rec', 'readwrite');
+      tx.objectStore('rec').put(blob, id);
+      tx.oncomplete = resolve; tx.onerror = resolve; tx.onabort = resolve;
+    });
+  } catch (e) {}
+}
+async function recClear() {
+  memRec.clear();
+  recUrls.forEach((u) => { try { URL.revokeObjectURL(u); } catch (e) {} });
+  recUrls.clear();
+  const d = await openDB();
+  if (!d) return;
+  try {
+    await new Promise((resolve) => {
+      const tx = d.transaction('rec', 'readwrite');
+      tx.objectStore('rec').clear();
+      tx.oncomplete = resolve; tx.onerror = resolve;
+    });
+  } catch (e) {}
+}
+async function loadRecordings() {
+  const all = await recGetAll();
+  recUrls.forEach((u) => { try { URL.revokeObjectURL(u); } catch (e) {} });
+  recUrls.clear();
+  all.forEach((blob, id) => {
+    try { recUrls.set(id, URL.createObjectURL(blob)); } catch (e) {}
+  });
+  cards.forEach((el) => { el.querySelector('.rec').hidden = !recUrls.has(el.dataset.id); });
+}
+
+// ══════════ 播放（同步取源，避免打断用户手势）══════════
+let rate = 1, recMode = false, quizMode = false, lastPlayed = null, stopFlag = false, playTTS = false;
+let currentAudio = null;
+
+// 发音来源：安多真人录音（默认）与 AI 合成对照
+const DIALECTS = {
+  real: { name: "安多 · 真人录音", dir: "audio-real" },
+  adx: { name: "安多 · AI 合成", dir: "audio-adx" },
+  bod: { name: "卫藏（拉萨）· AI 合成", dir: "audio" },
+};
+let dialect = localStorage.getItem("tib-dialect") || "real";
+if (!DIALECTS[dialect]) dialect = "real";
+
+function srcFor(id) {
+  if (!playTTS && recUrls.has(id)) return recUrls.get(id);   // 自己的录音优先
+  return `${DIALECTS[dialect].dir}/${id}.wav`;
+}
+
+function play(id) {
+  return new Promise((resolve) => {
+    cards.forEach((c) => c.classList.remove('playing'));
+    const el = cards.get(id);
+    if (el) el.classList.add('playing');
+    lastPlayed = id;
+
+    try { if (currentAudio) currentAudio.pause(); } catch (e) {}
+    const a = new Audio();
+    currentAudio = a;
+    a.preload = 'auto';
+    a.src = srcFor(id);
+    a.playbackRate = rate;
+    a.volume = 1;
+
+    let settled = false;
+    const finish = (why) => {
+      if (settled) return;
+      settled = true;
+      if (el) el.classList.remove('playing');
+      if (why) toast(why, 3000);
+      resolve();
+    };
+    a.onended = () => finish();
+    a.onerror = () => {
+      const code = a.error ? a.error.code : '?';
+      const map = { 1: '加载被中止', 2: '网络错误', 3: '解码失败', 4: '格式不支持或文件缺失' };
+      finish('播放失败：' + (map[code] || '错误码 ' + code) + '（' + a.src.split('/').pop() + '）');
+    };
+    const p = a.play();
+    if (p && p.catch) p.catch((err) => {
+      finish(err && err.name === 'NotAllowedError'
+        ? '浏览器拦截了播放，请再点一次该字母'
+        : '播放失败：' + (err && err.message ? err.message : err));
+    });
+    setTimeout(() => { if (!settled && a.paused) finish('音频没有开始播放（可能被静音或设备占用）'); }, 2500);
+  });
+}
+
+async function playAll() {
+  if (quizMode) toggleQuiz(false);
+  stopFlag = false;
+  $('btnStop').disabled = false;
+  $('btnAll').disabled = true;
+  for (const [id] of ALL) {
+    if (stopFlag) break;
+    await play(id);
+    await new Promise((r) => setTimeout(r, 240));
+  }
+  stopFlag = true;
+  $('btnStop').disabled = true;
+  $('btnAll').disabled = false;
+}
+
+// ══════════ 点击 ══════════
+async function onCardClick(id, shift) {
+  if (recMode) return recordFor(id);
+  if (quizMode) return answer(id);
+  playTTS = !!shift;
+  await play(id);
+  playTTS = false;
+}
+
+// ══════════ 听音练习 ══════════
+let quizTarget = null, score = 0, total = 0;
+function toggleQuiz(on = !quizMode) {
+  quizMode = on;
+  $('btnQuiz').classList.toggle('on', on);
+  if (on) {
+    score = 0; total = 0; $('score').textContent = 0; $('total').textContent = 0;
+    nextQuestion();
+    toast('听音练习：听听播放的是哪个字母？');
+  } else {
+    cards.forEach((c) => c.classList.remove('right', 'wrong'));
+  }
+}
+function nextQuestion() {
+  const pool = ALL;
+  quizTarget = pool[Math.floor(Math.random() * pool.length)][0];
+  playTTS = false;
+  setTimeout(() => play(quizTarget), 420);
+}
+function answer(id) {
+  if (!quizTarget) return;
+  total++;
+  const el = cards.get(id);
+  const tEl = cards.get(quizTarget);
+  if (id === quizTarget) {
+    score++;
+    el.classList.add('right');
+    setTimeout(() => el.classList.remove('right'), 700);
+    toast('✅ 正确');
+    setTimeout(nextQuestion, 950);
+  } else {
+    el.classList.add('wrong');
+    tEl.classList.add('right');
+    toast('❌ 正确答案：' + tEl.querySelector('.wylie').textContent + '  ' + tEl.querySelector('.glyph').textContent);
+    setTimeout(() => { el.classList.remove('wrong'); tEl.classList.remove('right'); nextQuestion(); }, 1600);
+  }
+  $('score').textContent = score;
+  $('total').textContent = total;
+}
+
+// ══════════ 录音模式 ══════════
+let mediaRecorder = null, chunks = [], recording = false;
+async function recordFor(id) {
+  if (recording) return;
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    return toast('当前环境不支持录音（file:// 下会被禁用，请用 http 访问）', 3600);
+  }
+  let stream;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  } catch (e) {
+    return toast('无法访问麦克风：' + (e && e.name ? e.name : e.message), 3600);
+  }
+  const el = cards.get(id);
+  chunks = [];
+  try { mediaRecorder = new MediaRecorder(stream); }
+  catch (e) { stream.getTracks().forEach((t) => t.stop()); return toast('无法创建录音器：' + e.message); }
+
+  mediaRecorder.ondataavailable = (e) => e.data.size && chunks.push(e.data);
+  mediaRecorder.onstop = async () => {
+    stream.getTracks().forEach((t) => t.stop());
+    const blob = new Blob(chunks, { type: 'audio/webm' });
+    await recPut(id, blob);
+    if (recUrls.has(id)) { try { URL.revokeObjectURL(recUrls.get(id)); } catch (e) {} }
+    recUrls.set(id, URL.createObjectURL(blob));
+    cards.forEach((c) => { c.querySelector('.rec').hidden = !recUrls.has(c.dataset.id); });
+    recording = false;
+    el.classList.remove('playing');
+    toast('已保存 ' + id + ' 的录音，点它即可回放');
+    playTTS = false;
+    play(id);
+  };
+  recording = true;
+  el.classList.add('playing');
+  toast('🎙 3 秒后开始，请准备朗读…', 3000);
+  setTimeout(() => {
+    if (!recording) return;
+    mediaRecorder.start();
+    toast('● 正在录音…', 1500);
+    setTimeout(() => { if (recording) mediaRecorder.stop(); }, 1600);
+  }, 3000);
+}
+
+// ══════════ 工具栏 ══════════
+$('btnAll').onclick = playAll;
+$('btnStop').onclick = () => { stopFlag = true; };
+$('btnQuiz').onclick = () => toggleQuiz();
+$('btnRec').onclick = () => {
+  recMode = !recMode;
+  $('btnRec').classList.toggle('on', recMode);
+  toast(recMode ? '录音模式：点击字母开始录制' : '已退出录音模式');
+};
+$('btnClearRec').onclick = async () => { await recClear(); await loadRecordings(); toast('已清除全部录音'); };
+$('rate').oninput = (e) => { rate = e.target.value / 100; $('rateVal').textContent = rate.toFixed(1) + '×'; };
+$('dialect').value = dialect;
+$('dialect').onchange = (e) => {
+  dialect = e.target.value;
+  localStorage.setItem("tib-dialect", dialect);
+  toast('已切换为「' + DIALECTS[dialect].name + '」发音');
+  if (lastPlayed) play(lastPlayed);
+};
+$('optWylie').onchange = (e) => document.body.classList.toggle('hide-wylie', !e.target.checked);
+$('optIpa').onchange = (e) => document.body.classList.toggle('hide-ipa', !e.target.checked);
+$('optCn').onchange = (e) => document.body.classList.toggle('hide-cn', !e.target.checked);
+
+addEventListener('keydown', (e) => {
+  if (e.code === 'Space') { e.preventDefault(); if (lastPlayed) play(lastPlayed); }
+  else if (e.code === 'KeyR') { const p = ALL[Math.floor(Math.random() * ALL.length)][0]; play(p); }
+  else if (e.code === 'Escape') { if (quizMode) toggleQuiz(false); if (recMode) $('btnRec').click(); }
+});
+
+loadRecordings();
+
+// 调试钩子
+window.__dbg = {
+  get last() { return currentAudio; },
+  state: () => currentAudio && ({
+    src: currentAudio.src.split('/').pop(),
+    paused: currentAudio.paused,
+    currentTime: +currentAudio.currentTime.toFixed(3),
+    duration: isNaN(currentAudio.duration) ? null : +currentAudio.duration.toFixed(2),
+    readyState: currentAudio.readyState,
+    volume: currentAudio.volume,
+    error: currentAudio.error ? currentAudio.error.code : null,
+  }),
+};
+</script>
+</body>
+</html>
