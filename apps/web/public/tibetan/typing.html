@@ -39,16 +39,16 @@
   .card.good{border-color:var(--green);background:#f3ffe4}
   @keyframes sh{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
 
-  .target{font-family:var(--tib);font-size:104px;line-height:1.1;min-height:120px;cursor:pointer;user-select:none}
-  .target.hint{color:#c8c8c8}
-  .meta{font-size:13px;color:var(--dim);margin-top:2px;min-height:20px}
-  .typedBox{margin-top:16px;border-top:2px dashed var(--gray);padding-top:14px}
-  .typedLbl{font-size:11px;color:var(--dim);letter-spacing:1px;margin-bottom:4px}
-  .typed{font-family:var(--tib);font-size:56px;line-height:1.15;min-height:64px;word-break:break-all}
-  .typed .cur{color:var(--blue);border-bottom:3px solid var(--blue)}
-  .typed .bad{color:var(--red)}
-  .typed .done{color:var(--green)}
-  .placeholder{color:#d8d8d8}
+  .line{font-family:var(--tib);font-size:96px;line-height:1.25;min-height:122px;cursor:pointer;user-select:none;
+        display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:0 2px}
+  .line span{transition:color .1s}
+  .line .pend{color:var(--ink)}                                   /* 还没打到 */
+  .line .cur{color:var(--blue);border-bottom:5px solid var(--blue)} /* 当前这个字 */
+  .line .ok{color:var(--green)}                                   /* 打对了 */
+  .line .no{color:var(--red);text-decoration:underline wavy var(--red) 3px}  /* 打错了 */
+  .line .raw{margin-top:10px;font-size:20px;color:var(--dim);font-family:var(--tib)}
+  .meta{font-size:13.5px;color:var(--dim);margin-bottom:4px;min-height:20px;letter-spacing:.3px}
+  .meta b{color:var(--blue);font-weight:800}
   .fb{margin-top:10px;font-size:14px;font-weight:700;min-height:22px}
   .fb.ok{color:var(--green)} .fb.no{color:var(--red)}
 
@@ -97,12 +97,8 @@
 
 <main>
   <div class="card" id="card">
-    <div class="target" id="target">ཀ</div>
     <div class="meta" id="meta"></div>
-    <div class="typedBox">
-      <div class="typedLbl">你输入的</div>
-      <div class="typed" id="typed"><span class="placeholder">点击下方键盘 / 直接打字</span></div>
-    </div>
+    <div class="line" id="target">ཀ</div>
     <div class="fb" id="fb"></div>
   </div>
 </main>
@@ -169,15 +165,15 @@ function newQuestion() {
   if (mode === "letter") {
     const pool = Math.random() < 0.8 ? CONSONANTS : VOWELS;
     const L = pick(pool);
-    target = { tib: L[1], meta: `${L[2]} · ${L[3]}`, kind: "letter", id: L[0] };
+    target = { tib: L[1], meta: `<b>${L[2]}</b> · ${L[3]}`, kind: "letter", id: L[0] };
   } else if (mode === "stack") {
     const C = pick(CONSONANTS), V = pick(VOWELS);
-    target = { tib: C[1] + V[1], meta: `${C[2]} + ${V[2]} · ${C[3]}${V[3]}`, kind: "letter", id: C[0] };
+    target = { tib: C[1] + V[1], meta: `<b>${C[2]}</b> + <b>${V[2]}</b> · ${C[3]}${V[3]}`, kind: "letter", id: C[0] };
   } else {
     if (!WORDS.length) { target = { tib: "ཀ", meta: "词表未载入", kind: "letter", id: "ka" }; }
     else {
       const w = pick(WORDS);
-      target = { tib: w.tib, meta: `${w.wylie} · ${w.cn}`, kind: "word", id: w.letter, wi: w.i };
+      target = { tib: w.tib, meta: `<b>${w.wylie}</b> · ${w.cn}`, kind: "word", id: w.letter, wi: w.i };
     }
   }
   render();
@@ -186,24 +182,17 @@ function newQuestion() {
 // ── 渲染 ──
 function render() {
   const t = target.tib;
-  $('target').textContent = t;
-  $('target').className = "target" + (typed ? "" : " hint");
-  $('meta').textContent = target.meta;
-
-  // 输入区（逐字对比着色）
-  const box = $('typed');
-  if (!typed) {
-    box.innerHTML = '<span class="placeholder">点击下方键盘 / 直接打字</span>';
-  } else {
-    let html = "";
-    for (let i = 0; i < typed.length; i++) {
-      const c = typed[i];
-      const cls = i < t.length && c === t[i] ? "done" : "bad";
-      html += `<span class="${cls}">${c === " " ? "␣" : c}</span>`;
-    }
-    if (typed.length < t.length) html += `<span class="cur"> </span>`;
-    box.innerHTML = html;
+  // 目标文字逐字着色：未打到=深灰 / 当前=蓝色下划线 / 打对=绿 / 打错=红波浪线
+  let html = "";
+  for (let i = 0; i < t.length; i++) {
+    const c = t[i];
+    let cls = "pend";
+    if (i < typed.length) cls = typed[i] === c ? "ok" : "no";
+    else if (i === typed.length) cls = "cur";
+    html += `<span class="${cls}">${c}</span>`;
   }
+  $('target').innerHTML = html;
+  $('meta').innerHTML = target.meta;
   updateStats();
 }
 
@@ -213,7 +202,7 @@ function updateStats() {
   const tot = stats.ok + stats.bad;
   $('sAcc').textContent = tot ? Math.round(stats.ok / tot * 100) + "%" : "—";
   const min = (Date.now() - stats.t0) / 60000;
-  $('sCpm').textContent = min > 0.05 ? Math.round(stats.chars / min) : 0;
+  $('sCpm').textContent = min > 0.02 ? Math.round(stats.chars / min) : 0;
   $('sHot').textContent = stats.hot;
 }
 
