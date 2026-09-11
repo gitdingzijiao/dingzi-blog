@@ -52,15 +52,18 @@
   .fb{margin-top:10px;font-size:14px;font-weight:700;min-height:22px}
   .fb.ok{color:var(--green)} .fb.no{color:var(--red)}
 
-  .kb{width:100%;max-width:720px;padding:14px 18px 22px;display:flex;flex-direction:column;gap:7px}
-  .krow{display:flex;gap:6px;justify-content:center}
-  .key{flex:1;max-width:64px;font-family:var(--tib);font-size:30px;line-height:1;cursor:pointer;
-       background:#fff;border:2px solid var(--gray);border-radius:12px;padding:10px 0;
-       box-shadow:0 3px 0 var(--gray);transition:.06s;user-select:none}
-  .key:active,.key.press{background:var(--gray);transform:translateY(2px);box-shadow:0 1px 0 var(--gray)}
-  .key.wide{max-width:110px;font-family:inherit;font-size:14px;font-weight:800;color:var(--dim)}
-  .key.lat{font-family:ui-monospace,Consolas,monospace;font-size:15px;font-weight:700;color:var(--dim);max-width:52px}
-  .key.lat small{display:block;font-family:var(--tib);font-size:19px;color:var(--ink);margin-top:1px}
+  .kb{width:100%;max-width:760px;padding:12px 10px 20px;display:flex;flex-direction:column;gap:5px}
+  .krow{display:flex;gap:4px;justify-content:center}
+  .key{flex:1;min-width:0;cursor:pointer;background:#fff;border:2px solid var(--gray);border-radius:9px;
+       padding:5px 0 4px;box-shadow:0 3px 0 var(--gray);transition:.06s;user-select:none;
+       display:flex;flex-direction:column;align-items:center;line-height:1.05}
+  .key .t{font-family:var(--tib);font-size:22px}
+  .key .l{font-size:9.5px;color:var(--dim);font-family:ui-monospace,Consolas,monospace;margin-top:1px}
+  .key:active,.key.press{background:#eef6ff;border-color:var(--blue);transform:translateY(2px);box-shadow:0 1px 0 var(--gray)}
+  .key.wide{flex:0 0 auto;padding:5px 10px;justify-content:center;font-size:12px;font-weight:800;color:var(--dim)}
+  .key.wide .t{font-family:inherit;font-size:12.5px}
+  .key.dead{opacity:.55}
+  .key.sp{visibility:hidden}
 
   .hint{width:100%;max-width:720px;padding:0 18px 24px;font-size:12px;color:var(--dim);line-height:1.9}
   .hint kbd{background:#f4f4f4;border:1px solid var(--gray);border-radius:5px;padding:1px 6px;font-family:inherit;font-size:11.5px}
@@ -107,11 +110,12 @@
 <div class="kb" id="kb"></div>
 
 <div class="hint">
-  打字方式（三种都支持）：<b>① 点下方屏幕键盘</b> ·
-  <b>② 系统藏文输入法</b>（装了 Tibetan 键盘就能直接敲） ·
-  <b>③ 威利转写</b>（打开「威利输入」后，用英文字母敲 <code>ka kha ga nga …</code> 自动转成藏文）<br>
+  <b>屏幕键盘 = 微软「藏文 (PRC) - 更新版」输入法的真实键位</b>（映射用 Windows API 从 KBDTIPRD.DLL 实测导出），
+  所以在这里练熟的指法，装好输入法后可以直接上手。<br>
+  打字方式：<b>① 点屏幕键盘</b> · <b>② 直接敲物理键盘</b>（默认按微软藏文键位映射，如 <code>C</code>→ཀ、<code>H</code>→མ、<code>J</code>→་）·
+  <b>③ 装系统藏文输入法</b>（页面自动接收藏文字符）· <b>④ 威利转写</b>（打开开关后用 <code>ka kha ga…</code> 敲）<br>
   快捷键：<kbd>Backspace</kbd> 删除 · <kbd>Enter</kbd> 跳过本题 · <kbd>Tab</kbd> 切换题型 · 点上方大字可听发音<br>
-  元音组合 = 辅音 + 元音符号（如 ཀ ི → ཀི）；词语取自组词学习页的真实词表，打字时会播放该词的真人发音。
+  元音组合 = 辅音 + 元音符号（如 ཀ + ི → ཀི）；词语取自组词学习页的真实词表，答对播放真人发音。
 </div>
 
 <div class="toast" id="toast"></div>
@@ -226,6 +230,7 @@ function playTarget() {
 
 function typeChar(ch) {
   if (locked) return;
+  if (stats.chars === 0) stats.t0 = Date.now();   // 速度从第一次按键开始算
   typed += ch;
   stats.chars++;
   const t = target.tib;
@@ -260,30 +265,44 @@ function backspace() {
   render();
 }
 
-// ── 屏幕键盘 ──
+// ── 屏幕键盘：完全照搬微软「藏文(PRC) - 更新版」键盘布局 ──
+// 映射用 Windows API ToUnicodeEx 从 KBDTIPRD.DLL 实测导出（141 条），此处只取 base 层
+const MS_LAYOUT = {
+  "`":"ཨ",
+  "1":"༡","2":"༢","3":"༣","4":"༤","5":"༥","6":"༦","7":"༧","8":"༨","9":"༩","0":"༠",
+  "-":"ཧ","=":"ཝ","[":"ཙ","]":"ཚ","\\":"ཛ",
+  "q":"ཅ","w":"ཆ","e":"ེ","r":"ར","t":"ཏ","y":"ཡ","u":"ུ","i":"ི","o":"ོ","p":"ཕ",
+  "a":"འ","s":"ས","d":"ད","f":"བ","g":"ང","h":"མ","j":"་","k":"ག","l":"ལ",";":"ཞ","'":"།",
+  "z":"ཟ","x":"ཤ","c":"ཀ","v":"ཁ","b":"པ","n":"ན",",":"ཐ",".":"ཇ","/":"ཉ",
+};
+// [物理键标签, 藏文, 宽度类]  —— 与真实键盘逐键对应
+const KBD_ROWS = [
+  [["`","ཨ"],["1","༡"],["2","༢"],["3","༣"],["4","༤"],["5","༥"],["6","༦"],["7","༧"],["8","༨"],["9","༩"],["0","༠"],["-","ཧ"],["=","ཝ"],["⌫","", "wide"]],
+  [["Q","ཅ"],["W","ཆ"],["E","ེ"],["R","ར"],["T","ཏ"],["Y","ཡ"],["U","ུ"],["I","ི"],["O","ོ"],["P","ཕ"],["[","ཙ"],["]","ཚ"],["\\","ཛ"]],
+  [["A","འ"],["S","ས"],["D","ད"],["F","བ"],["G","ང"],["H","མ"],["J","་"],["K","ག"],["L","ལ"],[";","ཞ"],["'","།"]],
+  [["Z","ཟ"],["X","ཤ"],["C","ཀ"],["V","ཁ"],["B","པ"],["N","ན"],["M","", "dead"],[",","ཐ"],[".","ཇ"],["/","ཉ"],["跳过","", "wide"]],
+];
+
 function buildKeyboard() {
   const kb = $('kb'); kb.innerHTML = "";
-  const rows = [
-    CONSONANTS.slice(0, 10), CONSONANTS.slice(10, 20), CONSONANTS.slice(20, 30),
-  ];
-  rows.forEach((r) => {
+  KBD_ROWS.forEach((row) => {
     const div = document.createElement('div'); div.className = "krow";
-    r.forEach((c) => div.appendChild(mkKey(c[1], () => typeChar(c[1]))));
+    row.forEach(([label, tib, cls]) => {
+      const b = document.createElement('button');
+      b.className = "key " + (cls || "");
+      const isWide = cls === "wide" || cls === "dead";
+      b.innerHTML = isWide
+        ? `<span class="t">${label === "M" ? "M" : label}</span>`
+        : `<span class="t">${tib}</span><span class="l">${label === "\\" ? "\\" : label}</span>`;
+      if (isWide) { b.classList.add("wide"); b.style.minWidth = "52px"; }
+      if (label === "⌫") b.onclick = () => { b.classList.add('press'); setTimeout(() => b.classList.remove('press'), 90); backspace(); };
+      else if (label === "跳过") b.onclick = () => { stats.hot = 0; newQuestion(); };
+      else if (label === "M") b.onclick = () => toast("M 在微软藏文键盘里是死键（组合用），跳过");
+      else b.onclick = () => { b.classList.add('press'); setTimeout(() => b.classList.remove('press'), 90); typeChar(tib); };
+      div.appendChild(b);
+    });
     kb.appendChild(div);
   });
-  const vrow = document.createElement('div'); vrow.className = "krow";
-  VOWELS.forEach((v) => vrow.appendChild(mkKey(v[1], () => typeChar(v[1]))));
-  vrow.appendChild(mkKey(TSEK, () => typeChar(TSEK)));
-  vrow.appendChild(mkKey("⌫", backspace, "wide"));
-  vrow.appendChild(mkKey("跳过", () => { target && (stats.hot = 0, newQuestion()); }, "wide"));
-  kb.appendChild(vrow);
-}
-function mkKey(label, fn, cls = "") {
-  const b = document.createElement('button');
-  b.className = "key " + cls;
-  b.textContent = label;
-  b.onclick = () => { b.classList.add('press'); setTimeout(() => b.classList.remove('press'), 90); fn(); };
-  return b;
 }
 
 // ── 物理键盘 ──
@@ -360,16 +379,26 @@ addEventListener('keydown', (e) => {
   if (e.key === "Enter") { e.preventDefault(); stats.hot = 0; newQuestion(); return; }
   if (e.key === "Tab") { e.preventDefault(); cycleMode(); return; }
 
-  // 系统藏文输入法直接给出的藏文字符
+  // ① 系统藏文输入法已生效 → 直接用系统给的藏文字符
   if (e.key && e.key.length === 1 && isTibetan(e.key)) { e.preventDefault(); typeChar(e.key); return; }
 
-  if (!wylieOn) return;
+  // ② 威利转写模式
+  if (wylieOn) {
+    if (!e.key || e.key.length !== 1) return;
+    const k = e.key.toLowerCase();
+    if (k === "." || k === " " || k === ",") { e.preventDefault(); wbuf = ""; typeChar(TSEK); return; }
+    if (!/[a-z']/.test(k)) return;
+    e.preventDefault();
+    wylieKey(k);
+    return;
+  }
+
+  // ③ 默认：按微软「藏文(PRC)」键位映射（没装输入法也能练同一套指法）
   if (!e.key || e.key.length !== 1) return;
   const k = e.key.toLowerCase();
-  if (k === "." || k === " " || k === ",") { e.preventDefault(); wbuf = ""; typeChar(TSEK); return; }
-  if (!/[a-z']/.test(k)) return;
-  e.preventDefault();
-  wylieKey(k);
+  if (k === " ") { e.preventDefault(); typeChar(TSEK); return; }
+  const tib = MS_LAYOUT[k];
+  if (tib) { e.preventDefault(); typeChar(tib); }
 });
 
 // ── 模式切换 ──
