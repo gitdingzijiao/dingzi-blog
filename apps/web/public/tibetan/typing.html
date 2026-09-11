@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>藏文打字练习 · བོད་ཡིག་ཨེབ་སྦྱོང་</title>
+<style>
+  :root{
+    --green:#58cc02; --green-d:#46a302; --blue:#1cb0f6; --blue-d:#1899d6;
+    --red:#ff4b4b; --red-d:#c93a3a; --gold:#ffc800;
+    --gray:#e5e5e5; --gray-d:#afafaf; --ink:#3c3c3c; --dim:#afafaf; --bg:#fff;
+    --tib:'Microsoft Himalaya','Noto Serif Tibetan','Jomolhari','Kailasa',serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{background:var(--bg);color:var(--ink);font-family:'Segoe UI','Microsoft YaHei',system-ui,sans-serif;
+       min-height:100vh;display:flex;flex-direction:column;align-items:center}
+
+  header{width:100%;max-width:720px;display:flex;align-items:center;gap:12px;padding:16px 18px 8px;flex-wrap:wrap}
+  .back{width:34px;height:34px;border-radius:50%;border:none;background:transparent;color:var(--dim);font-size:22px;cursor:pointer;flex-shrink:0}
+  .back:hover{background:#f4f4f4;color:var(--ink)}
+  h1{font-size:17px;font-weight:800;letter-spacing:.5px;flex:1}
+  h1 small{font-family:var(--tib);color:var(--dim);font-weight:400;font-size:19px;margin-left:6px}
+
+  .stats{width:100%;max-width:720px;display:flex;gap:8px;padding:0 18px 10px;flex-wrap:wrap}
+  .stat{flex:1;min-width:88px;border:2px solid var(--gray);border-radius:12px;padding:8px 10px;text-align:center}
+  .stat b{display:block;font-size:19px;line-height:1.25}
+  .stat span{font-size:11px;color:var(--dim);letter-spacing:.5px}
+  .stat.ok b{color:var(--green)} .stat.bad b{color:var(--red)} .stat.hot b{color:var(--gold)}
+
+  .modes{width:100%;max-width:720px;display:flex;gap:8px;padding:0 18px 12px}
+  .modes button{flex:1;font-family:inherit;font-size:13px;font-weight:800;cursor:pointer;
+    background:#fff;color:var(--dim);border:2px solid var(--gray);border-radius:12px;padding:9px 4px;
+    box-shadow:0 3px 0 var(--gray);transition:.1s}
+  .modes button.on{background:var(--blue);color:#fff;border-color:var(--blue);box-shadow:0 3px 0 var(--blue-d)}
+
+  main{width:100%;max-width:720px;padding:0 18px;flex:1;display:flex;flex-direction:column;justify-content:center}
+  .card{border:2px solid var(--gray);border-bottom-width:6px;border-radius:20px;padding:26px 18px 22px;text-align:center;background:#fff}
+  .card.shake{animation:sh .35s;border-color:var(--red)}
+  .card.good{border-color:var(--green);background:#f3ffe4}
+  @keyframes sh{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+
+  .target{font-family:var(--tib);font-size:104px;line-height:1.1;min-height:120px;cursor:pointer;user-select:none}
+  .target.hint{color:#c8c8c8}
+  .meta{font-size:13px;color:var(--dim);margin-top:2px;min-height:20px}
+  .typedBox{margin-top:16px;border-top:2px dashed var(--gray);padding-top:14px}
+  .typedLbl{font-size:11px;color:var(--dim);letter-spacing:1px;margin-bottom:4px}
+  .typed{font-family:var(--tib);font-size:56px;line-height:1.15;min-height:64px;word-break:break-all}
+  .typed .cur{color:var(--blue);border-bottom:3px solid var(--blue)}
+  .typed .bad{color:var(--red)}
+  .typed .done{color:var(--green)}
+  .placeholder{color:#d8d8d8}
+  .fb{margin-top:10px;font-size:14px;font-weight:700;min-height:22px}
+  .fb.ok{color:var(--green)} .fb.no{color:var(--red)}
+
+  .kb{width:100%;max-width:720px;padding:14px 18px 22px;display:flex;flex-direction:column;gap:7px}
+  .krow{display:flex;gap:6px;justify-content:center}
+  .key{flex:1;max-width:64px;font-family:var(--tib);font-size:30px;line-height:1;cursor:pointer;
+       background:#fff;border:2px solid var(--gray);border-radius:12px;padding:10px 0;
+       box-shadow:0 3px 0 var(--gray);transition:.06s;user-select:none}
+  .key:active,.key.press{background:var(--gray);transform:translateY(2px);box-shadow:0 1px 0 var(--gray)}
+  .key.wide{max-width:110px;font-family:inherit;font-size:14px;font-weight:800;color:var(--dim)}
+  .key.lat{font-family:ui-monospace,Consolas,monospace;font-size:15px;font-weight:700;color:var(--dim);max-width:52px}
+  .key.lat small{display:block;font-family:var(--tib);font-size:19px;color:var(--ink);margin-top:1px}
+
+  .hint{width:100%;max-width:720px;padding:0 18px 24px;font-size:12px;color:var(--dim);line-height:1.9}
+  .hint kbd{background:#f4f4f4;border:1px solid var(--gray);border-radius:5px;padding:1px 6px;font-family:inherit;font-size:11.5px}
+  .hint b{color:var(--ink)}
+  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(14px);background:var(--ink);color:#fff;
+    padding:10px 18px;border-radius:10px;font-size:13.5px;opacity:0;transition:.22s;pointer-events:none}
+  .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<header>
+  <button class="back" id="back" title="返回">✕</button>
+  <h1>藏文打字练习 <small>བོད་ཡིག་ཨེབ་སྦྱོང་</small></h1>
+</header>
+
+<div class="stats">
+  <div class="stat ok"><b id="sOk">0</b><span>正确</span></div>
+  <div class="stat bad"><b id="sBad">0</b><span>错误</span></div>
+  <div class="stat"><b id="sAcc">—</b><span>正确率</span></div>
+  <div class="stat hot"><b id="sCpm">0</b><span>字/分</span></div>
+  <div class="stat"><b id="sHot">0</b><span>连击</span></div>
+</div>
+
+<div class="modes">
+  <button data-mode="letter" class="on">字母</button>
+  <button data-mode="stack">元音组合</button>
+  <button data-mode="word">词语</button>
+  <button id="wylie">威利输入：关</button>
+</div>
+
+<main>
+  <div class="card" id="card">
+    <div class="target" id="target">ཀ</div>
+    <div class="meta" id="meta"></div>
+    <div class="typedBox">
+      <div class="typedLbl">你输入的</div>
+      <div class="typed" id="typed"><span class="placeholder">点击下方键盘 / 直接打字</span></div>
+    </div>
+    <div class="fb" id="fb"></div>
+  </div>
+</main>
+
+<div class="kb" id="kb"></div>
+
+<div class="hint">
+  打字方式（三种都支持）：<b>① 点下方屏幕键盘</b> ·
+  <b>② 系统藏文输入法</b>（装了 Tibetan 键盘就能直接敲） ·
+  <b>③ 威利转写</b>（打开「威利输入」后，用英文字母敲 <code>ka kha ga nga …</code> 自动转成藏文）<br>
+  快捷键：<kbd>Backspace</kbd> 删除 · <kbd>Enter</kbd> 跳过本题 · <kbd>Tab</kbd> 切换题型 · 点上方大字可听发音<br>
+  元音组合 = 辅音 + 元音符号（如 ཀ ི → ཀི）；词语取自组词学习页的真实词表，打字时会播放该词的真人发音。
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const CONSONANTS = [
+  ["ka","ཀ","ka","卡"],   ["kha","ཁ","kha","卡（送气）"], ["ga","ག","ga","嘎"],   ["nga","ང","nga","阿（鼻音）"],
+  ["ca","ཅ","ca","加"],   ["cha","ཆ","cha","加（送气）"], ["ja","ཇ","ja","贾"],   ["nya","ཉ","nya","尼亚"],
+  ["ta","ཏ","ta","达（不送气）"], ["tha","ཐ","tha","塔"], ["da","ད","da","达"],   ["na","ན","na","纳"],
+  ["pa","པ","pa","巴（不送气）"], ["pha","ཕ","pha","帕"], ["ba","བ","ba","巴"],   ["ma","མ","ma","玛"],
+  ["tsa","ཙ","tsa","匝"], ["tsha","ཚ","tsha","擦"],     ["dza","ཛ","dza","杂"], ["wa","ཝ","wa","瓦"],
+  ["zha","ཞ","zha","夏（浊）"], ["za","ཟ","za","萨（浊）"], ["aa","འ","'a","阿（喉塞）"], ["ya","ཡ","ya","亚"],
+  ["ra","ར","ra","惹"],   ["la","ལ","la","拉"],         ["sha","ཤ","sha","夏"], ["sa","ས","sa","萨"],
+  ["ha","ཧ","ha","哈"],   ["a","ཨ","a","阿"],
+];
+const VOWELS = [["vi","ི","i","衣"],["vu","ུ","u","乌"],["ve","ེ","e","诶"],["vo","ོ","o","哦"]];
+const TSEK = "་";
+
+// 威利转写表（含元音符号与隔点）
+const WYLIE = {
+  k:"ཀ", kh:"ཁ", g:"ག", ng:"ང", c:"ཅ", ch:"ཆ", j:"ཇ", ny:"ཉ",
+  t:"ཏ", th:"ཐ", d:"ད", n:"ན", p:"པ", ph:"ཕ", b:"བ", m:"མ",
+  ts:"ཙ", tsh:"ཚ", dz:"ཛ", w:"ཝ", zh:"ཞ", z:"ཟ", "'":"འ", y:"ཡ",
+  r:"ར", l:"ལ", sh:"ཤ", s:"ས", h:"ཧ", a:"ཨ",
+  i:"ི", u:"ུ", e:"ེ", o:"ོ", ".":TSEK, " ":TSEK, ",":TSEK,
+};
+
+const $ = (id) => document.getElementById(id);
+const toastEl = $('toast');
+let toastTimer;
+function toast(m, ms = 1600) { toastEl.textContent = m; toastEl.classList.add('on');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => toastEl.classList.remove('on'), ms); }
+
+let WORDS = [];
+let mode = "letter";
+let wylieOn = false;
+let target = null;          // {tib, meta, kind, id, wi}
+let typed = "";
+let locked = false;
+let stats = { ok: 0, bad: 0, chars: 0, hot: 0, best: 0, t0: Date.now() };
+const player = new Audio();
+
+// ── 出题 ──
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+function newQuestion() {
+  typed = ""; locked = false; wbuf = ""; lastTib = "";
+  $('fb').textContent = ""; $('fb').className = "fb";
+  $('card').className = "card";
+
+  if (mode === "letter") {
+    const pool = Math.random() < 0.8 ? CONSONANTS : VOWELS;
+    const L = pick(pool);
+    target = { tib: L[1], meta: `${L[2]} · ${L[3]}`, kind: "letter", id: L[0] };
+  } else if (mode === "stack") {
+    const C = pick(CONSONANTS), V = pick(VOWELS);
+    target = { tib: C[1] + V[1], meta: `${C[2]} + ${V[2]} · ${C[3]}${V[3]}`, kind: "letter", id: C[0] };
+  } else {
+    if (!WORDS.length) { target = { tib: "ཀ", meta: "词表未载入", kind: "letter", id: "ka" }; }
+    else {
+      const w = pick(WORDS);
+      target = { tib: w.tib, meta: `${w.wylie} · ${w.cn}`, kind: "word", id: w.letter, wi: w.i };
+    }
+  }
+  render();
+}
+
+// ── 渲染 ──
+function render() {
+  const t = target.tib;
+  $('target').textContent = t;
+  $('target').className = "target" + (typed ? "" : " hint");
+  $('meta').textContent = target.meta;
+
+  // 输入区（逐字对比着色）
+  const box = $('typed');
+  if (!typed) {
+    box.innerHTML = '<span class="placeholder">点击下方键盘 / 直接打字</span>';
+  } else {
+    let html = "";
+    for (let i = 0; i < typed.length; i++) {
+      const c = typed[i];
+      const cls = i < t.length && c === t[i] ? "done" : "bad";
+      html += `<span class="${cls}">${c === " " ? "␣" : c}</span>`;
+    }
+    if (typed.length < t.length) html += `<span class="cur"> </span>`;
+    box.innerHTML = html;
+  }
+  updateStats();
+}
+
+function updateStats() {
+  $('sOk').textContent = stats.ok;
+  $('sBad').textContent = stats.bad;
+  const tot = stats.ok + stats.bad;
+  $('sAcc').textContent = tot ? Math.round(stats.ok / tot * 100) + "%" : "—";
+  const min = (Date.now() - stats.t0) / 60000;
+  $('sCpm').textContent = min > 0.05 ? Math.round(stats.chars / min) : 0;
+  $('sHot').textContent = stats.hot;
+}
+
+// ── 输入处理 ──
+function playTarget() {
+  if (target.kind === "word" && target.wi !== undefined) {
+    player.src = `audio-words/${target.id}/${target.wi}.wav`;
+  } else {
+    player.src = `audio-real/${target.id}.wav`;
+  }
+  player.currentTime = 0;
+  player.play().catch(() => {});
+}
+
+function typeChar(ch) {
+  if (locked) return;
+  typed += ch;
+  stats.chars++;
+  const t = target.tib;
+
+  if (typed === t) {                       // 完全正确
+    locked = true;
+    stats.ok++; stats.hot++;
+    stats.best = Math.max(stats.best, stats.hot);
+    $('card').className = "card good";
+    $('fb').textContent = "✓ 正确"; $('fb').className = "fb ok";
+    render();
+    playTarget();
+    setTimeout(newQuestion, 620);
+    return;
+  }
+  if (!t.startsWith(typed)) {              // 打错了
+    locked = true;
+    stats.bad++; stats.hot = 0;
+    $('card').className = "card shake";
+    $('fb').textContent = `✗ 应为「${t}」，你打的是「${typed}」`; $('fb').className = "fb no";
+    render();
+    setTimeout(() => { typed = ""; locked = false; $('card').className = "card";
+      $('fb').textContent = ""; $('fb').className = "fb"; render(); }, 950);
+    return;
+  }
+  render();                                 // 前缀正确，继续
+}
+
+function backspace() {
+  if (locked || !typed) return;
+  typed = typed.slice(0, -1);
+  render();
+}
+
+// ── 屏幕键盘 ──
+function buildKeyboard() {
+  const kb = $('kb'); kb.innerHTML = "";
+  const rows = [
+    CONSONANTS.slice(0, 10), CONSONANTS.slice(10, 20), CONSONANTS.slice(20, 30),
+  ];
+  rows.forEach((r) => {
+    const div = document.createElement('div'); div.className = "krow";
+    r.forEach((c) => div.appendChild(mkKey(c[1], () => typeChar(c[1]))));
+    kb.appendChild(div);
+  });
+  const vrow = document.createElement('div'); vrow.className = "krow";
+  VOWELS.forEach((v) => vrow.appendChild(mkKey(v[1], () => typeChar(v[1]))));
+  vrow.appendChild(mkKey(TSEK, () => typeChar(TSEK)));
+  vrow.appendChild(mkKey("⌫", backspace, "wide"));
+  vrow.appendChild(mkKey("跳过", () => { target && (stats.hot = 0, newQuestion()); }, "wide"));
+  kb.appendChild(vrow);
+}
+function mkKey(label, fn, cls = "") {
+  const b = document.createElement('button');
+  b.className = "key " + cls;
+  b.textContent = label;
+  b.onclick = () => { b.classList.add('press'); setTimeout(() => b.classList.remove('press'), 90); fn(); };
+  return b;
+}
+
+// ── 物理键盘 ──
+let wbuf = "";          // 威利转写缓冲
+let lastTib = "";       // 上一个输出的藏文字符（用于判断固有元音）
+const TIB_CONS = /[\u0F40-\u0F6C]/;
+
+function isTibetan(ch) { return /[\u0F00-\u0FFF]/.test(ch); }
+
+/** 威利转写核心（纯函数，便于测试）：把累积缓冲转成藏文并返回
+ *  st = { buf, lastTib } —— 跨按键状态 */
+function wylieFeed(ch, st) {
+  st.buf += ch;
+  const keys = Object.keys(WYLIE);
+  let out = "";
+  let guard = 0;
+  while (st.buf.length && guard++ < 12) {
+    let matched = null, wait = false;
+    for (let len = st.buf.length; len >= 1; len--) {
+      const pre = st.buf.slice(0, len);
+      if (!keys.includes(pre)) continue;
+      // 该前缀还可能更长（如 k → kh），且缓冲已到末尾 → 等下一个字母
+      if (len === st.buf.length && keys.some((x) => x.length > len && x.startsWith(pre))) { wait = true; break; }
+      matched = pre;
+      break;
+    }
+    if (wait) break;
+    if (!matched) { st.buf = st.buf.slice(1); continue; }   // 无法匹配，丢弃首字符
+    if (matched === "a" && TIB_CONS.test(out.slice(-1) || st.lastTib)) {
+      // 辅音后的 a 是固有元音，不写出
+    } else {
+      out += WYLIE[matched];
+    }
+    st.buf = st.buf.slice(matched.length);
+  }
+  if (out) st.lastTib = out.slice(-1);
+  return out;
+}
+
+const wstate = { buf: "", lastTib: "" };
+let flushTimer = null;
+
+/** 强制结算缓冲里剩下的字母（不再等待更长的键） */
+function wylieFlush() {
+  const st = wstate;
+  if (!st.buf) return;
+  const keys = Object.keys(WYLIE);
+  let out = "";
+  let guard = 0;
+  while (st.buf.length && guard++ < 12) {
+    let matched = null;
+    for (let len = st.buf.length; len >= 1; len--) {
+      const pre = st.buf.slice(0, len);
+      if (keys.includes(pre)) { matched = pre; break; }
+    }
+    if (!matched) { st.buf = st.buf.slice(1); continue; }
+    if (!(matched === "a" && TIB_CONS.test(out.slice(-1) || st.lastTib))) out += WYLIE[matched];
+    st.buf = st.buf.slice(matched.length);
+  }
+  if (out) st.lastTib = out.slice(-1);
+  for (const c of out) typeChar(c);
+}
+
+function wylieKey(ch) {
+  const out = wylieFeed(ch, wstate);
+  for (const c of out) typeChar(c);
+  // 缓冲里还留着歧义键（如 bod 末尾的 d 可能在等 dz）→ 短延时后强制结算
+  clearTimeout(flushTimer);
+  if (wstate.buf) flushTimer = setTimeout(wylieFlush, 420);
+}
+
+addEventListener('keydown', (e) => {
+  if (e.key === "Backspace") { e.preventDefault(); backspace(); return; }
+  if (e.key === "Enter") { e.preventDefault(); stats.hot = 0; newQuestion(); return; }
+  if (e.key === "Tab") { e.preventDefault(); cycleMode(); return; }
+
+  // 系统藏文输入法直接给出的藏文字符
+  if (e.key && e.key.length === 1 && isTibetan(e.key)) { e.preventDefault(); typeChar(e.key); return; }
+
+  if (!wylieOn) return;
+  if (!e.key || e.key.length !== 1) return;
+  const k = e.key.toLowerCase();
+  if (k === "." || k === " " || k === ",") { e.preventDefault(); wbuf = ""; typeChar(TSEK); return; }
+  if (!/[a-z']/.test(k)) return;
+  e.preventDefault();
+  wylieKey(k);
+});
+
+// ── 模式切换 ──
+const MODES = ["letter", "stack", "word"];
+function cycleMode() {
+  const i = (MODES.indexOf(mode) + 1) % MODES.length;
+  setMode(MODES[i]);
+}
+function setMode(m) {
+  mode = m;
+  document.querySelectorAll('.modes button[data-mode]').forEach((b) => b.classList.toggle('on', b.dataset.mode === m));
+  stats.hot = 0;
+  newQuestion();
+}
+document.querySelectorAll('.modes button[data-mode]').forEach((b) => { b.onclick = () => setMode(b.dataset.mode); });
+$('wylie').onclick = () => {
+  wylieOn = !wylieOn;
+  $('wylie').textContent = "威利输入：" + (wylieOn ? "开" : "关");
+  $('wylie').style.background = wylieOn ? "#ffc800" : "";
+  $('wylie').style.color = wylieOn ? "#3c3c3c" : "";
+  $('wylie').style.borderColor = wylieOn ? "#ffc800" : "";
+  toast(wylieOn ? "威利输入已开：用英文字母敲 ka kha ga…" : "威利输入已关");
+};
+$('target').onclick = playTarget;
+$('back').onclick = () => { location.href = "./"; };
+
+buildKeyboard();
+
+// 调试钩子（供自动化验证）
+window.__dbg = {
+  wylieKey,
+  convert(str) {
+    const st = { buf: "", lastTib: "" };
+    let o = "";
+    for (const ch of str) o += wylieFeed(ch, st);
+    // 结算残留缓冲
+    const keys = Object.keys(WYLIE);
+    let guard = 0;
+    while (st.buf.length && guard++ < 12) {
+      let matched = null;
+      for (let len = st.buf.length; len >= 1; len--) {
+        const pre = st.buf.slice(0, len);
+        if (keys.includes(pre)) { matched = pre; break; }
+      }
+      if (!matched) { st.buf = st.buf.slice(1); continue; }
+      if (!(matched === "a" && TIB_CONS.test(o.slice(-1) || st.lastTib))) o += WYLIE[matched];
+      st.buf = st.buf.slice(matched.length);
+    }
+    return o;
+  },
+  reset() { typed = ""; locked = false; wstate.buf = ""; wstate.lastTib = ""; render(); },
+  setTarget(t) { target = { tib: t, meta: "test", kind: "letter", id: "ka" }; typed = ""; locked = false; render(); },
+  get typed() { return typed; },
+  get target() { return target && target.tib; },
+  stats,
+};
+
+// 载入词表
+fetch('words.json').then((r) => r.json()).then((j) => {
+  WORDS = [];
+  j.letters.forEach((L) => L.words.forEach((w, i) => WORDS.push({ ...w, letter: L.id, i })));
+  newQuestion();
+}).catch(() => { newQuestion(); });
+</script>
+</body>
+</html>
