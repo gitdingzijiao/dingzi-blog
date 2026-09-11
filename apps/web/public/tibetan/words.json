@@ -1,0 +1,46 @@
+{
+  "note": "组词表 —— 全部来自教学视频「30个辅音字母」的真实词语与真人发音（非合成）。未收录组词的字母只显示读音。",
+  "source": "组词视频：30个辅音字母组词教学（109s）",
+  "letters": [
+    { "id": "ka",  "tib": "ཀ", "wylie": "ka",  "words": [
+      { "tib": "ཀ་བ",     "wylie": "ka ba",    "cn": "柱子" } ] },
+    { "id": "kha", "tib": "ཁ", "wylie": "kha", "words": [
+      { "tib": "ཁ",       "wylie": "kha",      "cn": "口、嘴" } ] },
+    { "id": "nga", "tib": "ང", "wylie": "nga", "words": [
+      { "tib": "ང",       "wylie": "nga",      "cn": "我" } ] },
+    { "id": "ja",  "tib": "ཇ", "wylie": "ja",  "words": [
+      { "tib": "ཇ",       "wylie": "ja",       "cn": "茶" },
+      { "tib": "ཇ་མཁན",   "wylie": "ja mkhan", "cn": "厨师" } ] },
+    { "id": "nya", "tib": "ཉ", "wylie": "nya", "words": [
+      { "tib": "ཉ",       "wylie": "nya",      "cn": "鱼" },
+      { "tib": "ཉ་པ",     "wylie": "nya pa",   "cn": "渔夫" } ] },
+    { "id": "tha", "tib": "ཐ", "wylie": "tha", "words": [
+      { "tib": "ཐ་མག",    "wylie": "tha mag",  "cn": "香烟" } ] },
+    { "id": "pha", "tib": "ཕ", "wylie": "pha", "words": [
+      { "tib": "ཕ་མ",     "wylie": "pha ma",   "cn": "父母" } ] },
+    { "id": "ma",  "tib": "མ", "wylie": "ma",  "words": [
+      { "tib": "ཕ་མ",     "wylie": "pha ma",   "cn": "父母" },
+      { "tib": "ཇ་མཁན",   "wylie": "ja mkhan", "cn": "厨师" },
+      { "tib": "ཐ་མག",    "wylie": "tha mag",  "cn": "香烟" },
+      { "tib": "ཝ་མོ",    "wylie": "wa mo",    "cn": "狐狸" } ] },
+    { "id": "tsha","tib": "ཚ", "wylie": "tsha","words": [
+      { "tib": "ཚ་བ",     "wylie": "tsha ba",  "cn": "热" } ] },
+    { "id": "wa",  "tib": "ཝ", "wylie": "wa",  "words": [
+      { "tib": "ཝ་མོ",    "wylie": "wa mo",    "cn": "狐狸" } ] },
+    { "id": "za",  "tib": "ཟ", "wylie": "za",  "words": [
+      { "tib": "ཟ་མ",     "wylie": "za ma",    "cn": "食物" } ] },
+    { "id": "ra",  "tib": "ར", "wylie": "ra",  "words": [
+      { "tib": "ར་མ",     "wylie": "ra ma",    "cn": "山羊" } ] },
+    { "id": "la",  "tib": "ལ", "wylie": "la",  "words": [
+      { "tib": "ལྷམ",     "wylie": "lham",     "cn": "鞋" } ] },
+    { "id": "sha", "tib": "ཤ", "wylie": "sha", "words": [
+      { "tib": "ཤ",       "wylie": "sha",      "cn": "肉" } ] },
+    { "id": "sa",  "tib": "ས", "wylie": "sa",  "words": [
+      { "tib": "ས",       "wylie": "sa",       "cn": "土、地" } ] },
+    { "id": "ha",  "tib": "ཧ", "wylie": "ha",  "words": [
+      { "tib": "ཧ་ཧ",     "wylie": "ha ha",    "cn": "哈哈" } ] },
+    { "id": "a",   "tib": "ཨ", "wylie": "a",   "words": [
+      { "tib": "ཨ་མ",     "wylie": "a ma",     "cn": "母亲" },
+      { "tib": "ཨ་ཕ",     "wylie": "a pha",    "cn": "父亲" } ] }
+  ]
+}
