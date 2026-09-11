@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>吾乎村 · 3D 场景（Blender 精模版）</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { overflow: hidden; background: #0a0d14; font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif; }
+  canvas { display: block; }
+  #hud {
+    position: fixed; left: 18px; top: 18px; z-index: 10; color: #eaf2ff;
+    background: rgba(10, 18, 30, 0.76); border: 1px solid rgba(120, 180, 240, 0.28);
+    border-radius: 12px; padding: 14px 18px; backdrop-filter: blur(12px);
+    font-size: 13px; line-height: 1.8; max-width: 310px;
+    box-shadow: 0 10px 34px rgba(0,0,0,.5);
+  }
+  #hud h1 { font-size: 16px; color: #7fd4ff; letter-spacing: 1px; margin-bottom: 4px; }
+  #hud .loc { font-size: 11.5px; color: #8fa8c8; margin-bottom: 8px; }
+  #hud b { color: #ffd97f; }
+  #hud .keys { font-size: 11.5px; color: #9fb6d4; }
+  #hud .keys kbd {
+    background: rgba(127,212,255,.16); border: 1px solid rgba(127,212,255,.35);
+    border-radius: 4px; padding: 1px 5px; font-size: 10.5px; color: #cfe8ff; font-family: inherit;
+  }
+  #hud .src { font-size: 10.5px; color: #6f83a0; margin-top: 8px; line-height: 1.6; border-top: 1px solid rgba(120,180,240,.15); padding-top: 6px; }
+  #sunRow { display: flex; align-items: center; gap: 8px; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(120,180,240,.15); }
+  #sunRow label { font-size: 11px; color: #9fb6d4; white-space: nowrap; }
+  #sun { flex: 1; accent-color: #7fd4ff; }
+  #loading { position: fixed; inset: 0; display: grid; place-content: center; gap: 16px; justify-items: center; background: #0a0d14; color: #8fa8c8; z-index: 30; transition: opacity .6s; }
+  #loading.hide { opacity: 0; pointer-events: none; }
+  .spin { width: 38px; height: 38px; border-radius: 50%; border: 3px solid rgba(127,212,255,.2); border-top-color: #7fd4ff; animation: sp .9s linear infinite; }
+  @keyframes sp { to { transform: rotate(360deg); } }
+  #bar { width: 280px; height: 6px; background: rgba(255,255,255,.1); border-radius: 3px; overflow: hidden; }
+  #barIn { height: 100%; width: 0%; background: linear-gradient(90deg, #7fd4ff, #7c5cff); transition: width .25s; }
+  #crosshair { position: fixed; left: 50%; top: 50%; width: 16px; height: 16px; margin: -8px 0 0 -8px; z-index: 8; pointer-events: none; opacity: 0; transition: opacity .3s; }
+  #crosshair.on { opacity: .85; }
+  #crosshair::before, #crosshair::after { content: ''; position: absolute; background: rgba(255,255,255,.9); box-shadow: 0 0 4px #000; }
+  #crosshair::before { left: 7px; top: 0; width: 2px; height: 16px; }
+  #crosshair::after { top: 7px; left: 0; height: 2px; width: 16px; }
+  #modeBtn {
+    position: fixed; right: 18px; bottom: 18px; z-index: 10; cursor: pointer; border: none;
+    background: rgba(127, 212, 255, 0.92); color: #06121f; font-weight: 800; font-family: inherit;
+    border-radius: 12px; padding: 12px 18px; font-size: 14px; box-shadow: 0 8px 24px rgba(0,0,0,.45);
+    transition: transform .12s;
+  }
+  #modeBtn:hover { transform: translateY(-2px); }
+  #stats { position: fixed; right: 18px; top: 18px; z-index: 10; color: #8fa8c8; font-size: 11px;
+    background: rgba(10,18,30,.7); border: 1px solid rgba(120,180,240,.2); border-radius: 8px; padding: 6px 10px; }
+</style>
+</head>
+<body>
+
+<div id="hud">
+  <h1>🏔️ 吾乎村</h1>
+  <div class="loc">甘肃省甘南州迭部县桑坝乡<br>34.0962°N, 103.7584°E · 海拔约 2600m</div>
+  <div class="keys">
+    俯瞰：左键旋转 · 右键平移 · 滚轮缩放<br>
+    地面：<kbd>V</kbd> 切换 · <kbd>WASD</kbd> 移动 · <kbd>Shift</kbd> 加速 · <kbd>Esc</kbd> 退出
+  </div>
+  <div id="sunRow">
+    <label>☀️ 时刻</label>
+    <input id="sun" type="range" min="0" max="100" value="62">
+  </div>
+  <div class="src">
+    模型：Blender 精细化重建（52 栋藏式民居 · 金顶寺院 · 白塔 · 经幡 · 700 棵云杉）<br>
+    地形 Terrarium DEM · 影像 Esri World Imagery · 370k 三角面 · Draco 压缩
+  </div>
+</div>
+
+<div id="stats">—</div>
+<div id="crosshair"></div>
+<button id="modeBtn">🚶 进入地面视角</button>
+
+<div id="loading">
+  <div class="spin"></div>
+  <p id="loadTxt">正在加载 3D 模型…</p>
+  <div id="bar"><div id="barIn"></div></div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "./libs/three.module.js",
+    "three/addons/": "./libs/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const $ = (id) => document.getElementById(id);
+const setProgress = (p, txt) => { $('barIn').style.width = p + '%'; if (txt) $('loadTxt').textContent = txt; };
+
+// ══════════ 渲染器 / 场景 ══════════
+const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.NoToneMapping;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+document.body.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0xa9c6e8, 900, 3600);
+
+const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.5, 9000);
+
+// ── 渐变天空 ──
+const skyGeo = new THREE.SphereGeometry(6000, 32, 16);
+const skyMat = new THREE.ShaderMaterial({
+  side: THREE.BackSide, depthWrite: false,
+  uniforms: {
+    top: { value: new THREE.Color(0x2f6fbf) },
+    bottom: { value: new THREE.Color(0xbcd4ea) },
+    sunDir: { value: new THREE.Vector3(0, 1, 0) }
+  },
+  vertexShader: `varying vec3 vP; void main(){ vP = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+  fragmentShader: `
+    uniform vec3 top; uniform vec3 bottom; uniform vec3 sunDir; varying vec3 vP;
+    void main(){
+      float h = clamp(vP.y * 1.15 + 0.06, 0.0, 1.0);
+      vec3 c = mix(bottom, top, pow(h, 0.75));
+      float s = max(dot(normalize(vP), normalize(sunDir)), 0.0);
+      c += vec3(1.0, 0.86, 0.62) * pow(s, 90.0) * 0.9;
+      c += vec3(1.0, 0.82, 0.55) * pow(s, 6.0) * 0.10;
+      gl_FragColor = vec4(c, 1.0);
+    }`
+});
+const sky = new THREE.Mesh(skyGeo, skyMat);
+sky.frustumCulled = false;
+scene.add(sky);
+
+// ── 光照（与 Blender 场景匹配：太阳 + 弱环境光）──
+const hemi = new THREE.HemisphereLight(0xbcd4ff, 0x5a4a34, 0.55);
+scene.add(hemi);
+
+const sun = new THREE.DirectionalLight(0xfff4e2, 3.4);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.camera.near = 10;
+sun.shadow.camera.far = 2400;
+const SH = 260;
+sun.shadow.camera.left = -SH; sun.shadow.camera.right = SH;
+sun.shadow.camera.top = SH;  sun.shadow.camera.bottom = -SH;
+sun.shadow.bias = -0.0008;
+sun.shadow.normalBias = 0.6;
+scene.add(sun);
+scene.add(sun.target);
+
+const VILLAGE = new THREE.Vector3(0, 406, 0);      // 村落中心（GLB 世界坐标）
+
+// 时刻滑杆 → 太阳方位/高度（0=日出偏东，100=正午偏西）
+function applyTime(v01) {
+  const t = Math.max(0.04, v01) * Math.PI;
+  const elev = Math.sin(t) * 0.90 + 0.06;
+  const dir = new THREE.Vector3(Math.cos(t), Math.max(elev, 0.06), -0.62).normalize();
+  sun.position.copy(VILLAGE).addScaledVector(dir, 1200);
+  sun.target.position.copy(VILLAGE);
+  sun.target.updateMatrixWorld();
+  sun.intensity = 0.5 + 3.0 * Math.sin(t);
+  skyMat.uniforms.sunDir.value.copy(dir);
+  const warm = new THREE.Color().setHSL(0.09, 0.55, 0.62);
+  sun.color.copy(new THREE.Color(0xfff4e2).lerp(warm, 1 - Math.min(1, Math.sin(t) * 1.6)));
+  hemi.intensity = 0.28 + 0.42 * Math.min(1, Math.sin(t) * 1.4);
+}
+applyTime(0.62);
+
+// ══════════ 地形高度查询 ══════════
+let heightAt = () => VILLAGE.y;
+
+function buildHeightField(terrainMesh) {
+  const pos = terrainMesh.geometry.attributes.position;
+  const n = pos.count;
+  const S = Math.round(Math.sqrt(n)) - 1;           // 148225 → S = 384
+  let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+  let minH = Infinity, maxH = -Infinity;
+  for (let k = 0; k < n; k++) {
+    const x = pos.getX(k), y = pos.getY(k), z = pos.getZ(k);
+    if (x < minX) minX = x; if (x > maxX) maxX = x;
+    if (z < minZ) minZ = z; if (z > maxZ) maxZ = z;
+    if (y < minH) minH = y; if (y > maxH) maxH = y;
+  }
+  const dx = (maxX - minX) / S, dz = (maxZ - minZ) / S;
+
+  // 注意：glTF 导出器会按面重排顶点顺序，不能假设 index = j*(S+1)+i。
+  // 这里按坐标反推栅格位置，与顶点顺序无关。
+  const grid = new Float32Array((S + 1) * (S + 1));
+  let filled = 0;
+  for (let k = 0; k < n; k++) {
+    const i = Math.round((pos.getX(k) - minX) / dx);
+    const j = Math.round((pos.getZ(k) - minZ) / dz);
+    if (i < 0 || i > S || j < 0 || j > S) continue;
+    grid[j * (S + 1) + i] = pos.getY(k);
+    filled++;
+  }
+  console.log(`地形栅格 ${S + 1}×${S + 1} · 间距 ${dx.toFixed(2)}m · 高程 ${minH.toFixed(0)}~${maxH.toFixed(0)}m · 填充 ${filled}/${(S + 1) * (S + 1)}`);
+
+  heightAt = (x, z) => {
+    const fx = Math.min(Math.max((x - minX) / dx, 0), S);
+    const fz = Math.min(Math.max((z - minZ) / dz, 0), S);
+    const i0 = Math.floor(fx), j0 = Math.floor(fz);
+    const i1 = Math.min(i0 + 1, S), j1 = Math.min(j0 + 1, S);
+    const tx = fx - i0, tz = fz - j0;
+    const h00 = grid[j0 * (S + 1) + i0], h10 = grid[j0 * (S + 1) + i1];
+    const h01 = grid[j1 * (S + 1) + i0], h11 = grid[j1 * (S + 1) + i1];
+    return (h00 * (1 - tx) + h10 * tx) * (1 - tz) + (h01 * (1 - tx) + h11 * tx) * tz;
+  };
+}
+
+// ══════════ 加载 GLB ══════════
+const draco = new DRACOLoader();
+draco.setDecoderPath('./libs/jsm/libs/draco/gltf/');
+
+const loader = new GLTFLoader();
+loader.setDRACOLoader(draco);
+
+let model = null, triCount = 0;
+
+loader.load('scene.glb',
+  (gltf) => {
+    model = gltf.scene;
+    model.traverse((o) => {
+      if (!o.isMesh) return;
+      o.castShadow = true;
+      o.receiveShadow = true;
+      if (o.geometry.index) triCount += o.geometry.index.count / 3;
+      if (o.name === 'Terrain') buildHeightField(o);
+      const mats = Array.isArray(o.material) ? o.material : [o.material];
+      for (const m of mats) if (m && m.isMeshStandardMaterial) m.envMapIntensity = 0.6;
+    });
+    scene.add(model);
+
+    camera.position.set(-165, VILLAGE.y + 62, 185);
+    controls.target.copy(VILLAGE);
+    controls.update();
+
+    $('stats').textContent = `${Math.round(triCount / 1000)}k 三角面 · 112 个对象`;
+    setProgress(100, '完成');
+    $('loading').classList.add('hide');
+    console.log('中心高程校验 heightAt(0,0) =', heightAt(0, 0).toFixed(1), '(期望 406)');
+  },
+  (xhr) => {
+    if (xhr.total) setProgress(Math.round((xhr.loaded / xhr.total) * 100),
+      `正在加载 3D 模型… ${(xhr.loaded / 1048576).toFixed(1)} / ${(xhr.total / 1048576).toFixed(1)} MB`);
+    else setProgress(60, `正在加载 3D 模型… ${(xhr.loaded / 1048576).toFixed(1)} MB`);
+  },
+  (err) => {
+    console.error(err);
+    $('loadTxt').textContent = '模型加载失败：' + err;
+  }
+);
+
+// ══════════ 相机控制 ══════════
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.06;
+controls.target.copy(VILLAGE);
+controls.maxPolarAngle = Math.PI * 0.495;
+controls.minDistance = 12;
+controls.maxDistance = 2600;
+camera.position.set(VILLAGE.x - 620, VILLAGE.y + 330, VILLAGE.z + 700);
+controls.update();
+
+// ── 地面视角（指针锁定 + WASD）──
+let fps = false;
+const keys = {};
+const euler = new THREE.Euler(0, 0, 0, 'YXZ');
+const vel = new THREE.Vector3();
+
+function enterFPS() {
+  fps = true;
+  controls.enabled = false;
+  const sx = VILLAGE.x + 20, sz = VILLAGE.z + 20;
+  camera.position.set(sx, heightAt(sx, sz) + 1.7, sz);
+  euler.set(0, Math.PI * 0.75, 0);
+  camera.quaternion.setFromEuler(euler);
+  try { renderer.domElement.requestPointerLock(); } catch (e) { /* headless 下会失败，不影响移动 */ }
+  $('crosshair').classList.add('on');
+  $('modeBtn').textContent = '🛰 返回俯瞰视角';
+}
+function exitFPS() {
+  fps = false;
+  controls.enabled = true;
+  if (document.pointerLockElement && document.exitPointerLock) document.exitPointerLock();
+  camera.position.set(VILLAGE.x - 165, VILLAGE.y + 62, VILLAGE.z + 185);
+  controls.target.copy(VILLAGE);
+  controls.update();
+  $('crosshair').classList.remove('on');
+  $('modeBtn').textContent = '🚶 进入地面视角';
+}
+function toggleMode() { fps ? exitFPS() : enterFPS(); }
+
+$('modeBtn').onclick = toggleMode;
+addEventListener('keydown', (e) => {
+  keys[e.code] = true;
+  if (e.code === 'KeyV') toggleMode();
+});
+addEventListener('keyup', (e) => { keys[e.code] = false; });
+document.addEventListener('pointerlockchange', () => {
+  if (fps && !document.pointerLockElement) exitFPS();
+});
+addEventListener('mousemove', (e) => {
+  if (!fps || !document.pointerLockElement) return;
+  euler.setFromQuaternion(camera.quaternion);
+  euler.y -= e.movementX * 0.0022;
+  euler.x -= e.movementY * 0.0022;
+  euler.x = Math.max(-Math.PI / 2 + 0.05, Math.min(Math.PI / 2 - 0.05, euler.x));
+  camera.quaternion.setFromEuler(euler);
+});
+
+$('sun').oninput = (e) => applyTime(e.target.value / 100);
+
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+// ══════════ 主循环 ══════════
+const clock = new THREE.Clock();
+function animate() {
+  requestAnimationFrame(animate);
+  const dt = Math.min(clock.getDelta(), 0.05);
+
+  if (fps) {
+    const speed = (keys['ShiftLeft'] || keys['ShiftRight'] ? 26 : 8);
+    const dir = new THREE.Vector3(
+      (keys['KeyD'] ? 1 : 0) - (keys['KeyA'] ? 1 : 0), 0,
+      (keys['KeyS'] ? 1 : 0) - (keys['KeyW'] ? 1 : 0)
+    );
+    if (dir.lengthSq() > 0) dir.normalize().applyQuaternion(camera.quaternion).setY(0).normalize();
+    vel.lerp(dir.multiplyScalar(speed), 1 - Math.pow(0.0015, dt));
+    camera.position.addScaledVector(vel, dt);
+    const gy = heightAt(camera.position.x, camera.position.z) + 1.7;   // 贴地行走
+    camera.position.y += (gy - camera.position.y) * Math.min(1, dt * 12);
+  } else {
+    controls.update();
+  }
+
+  sky.position.copy(camera.position);
+  renderer.render(scene, camera);
+}
+animate();
+
+// 调试钩子（供自动化验证；用 getter 保证取到最新值）
+window.__dbg = {
+  camera, scene, renderer, controls,
+  get heightAt() { return heightAt; },
+  get tri() { return triCount; },
+  get fps() { return fps; },
+  village: VILLAGE,
+};
+</script>
+</body>
+</html>

@@ -57,6 +57,13 @@ function getProjects(locale: ReturnType<typeof getCurrentLocale>): readonly Proj
         status: "live",
       },
       {
+        name: "吾乎村 3D 地图",
+        description: "用 Blender 依据真实 DEM 高程与卫星影像重建的甘南藏寨三维场景：52 栋藏式民居、金顶寺院、白塔经幡、700 棵云杉。浏览器里可环绕俯瞰，也能切到地面视角在村里行走。",
+        tags: ["Three.js", "Blender", "3D", "GIS"],
+        href: "/village-map/",
+        status: "live",
+      },
+      {
         name: "小人地图行走（DingGame）",
         description: "用 Godot 开发的 2D 行走小游戏：无限生成地图、金币收集、相机跟随。支持 Windows / Android。",
         tags: ["Godot", "GDScript", "游戏"],
@@ -78,6 +85,13 @@ function getProjects(locale: ReturnType<typeof getCurrentLocale>): readonly Proj
       description: "A lightweight Canvas fighting game: fight the AI in real time with punch detection, hit stun, and health bars. A few dozen KB, instant to load.",
       tags: ["HTML5", "Canvas", "Game"],
       href: "/fight/",
+      status: "live",
+    },
+    {
+      name: "Wuhu Village 3D",
+      description: "A Tibetan village rebuilt in Blender from real DEM elevation and satellite imagery: 52 Tibetan houses, a golden-roofed temple, stupas and prayer flags, and 700 conifers. Orbit from above in the browser, or switch to a ground-level walk mode.",
+      tags: ["Three.js", "Blender", "3D", "GIS"],
+      href: "/village-map/",
       status: "live",
     },
     {
