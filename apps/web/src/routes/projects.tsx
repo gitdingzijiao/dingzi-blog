@@ -64,8 +64,8 @@ function getProjects(locale: ReturnType<typeof getCurrentLocale>): readonly Proj
         status: "live",
       },
       {
-        name: "藏文字母发音表",
-        description: "点击字母即发音的藏文字母学习页：30 辅音 + 4 元音全部为真人录音（安多藏语），支持听音练习、自己录音覆盖、隐藏转写自测。",
+        name: "藏文字母学习套件（发音 · 组词 · 打字）",
+        description: "30 辅音 + 4 元音全部为真人录音（安多藏语），点击即发音。含三个页面：字母表（听音练习、自己录音覆盖、隐藏转写自测）、组词学习页（每个字母一页，含真人词音与中文释义）、藏文打字练习（屏幕键盘与微软藏文输入法键位一致，打对变绿打错变红）。",
         tags: ["HTML5", "Web Audio", "藏语", "学习工具"],
         href: "/tibetan/",
         status: "live",
@@ -102,8 +102,8 @@ function getProjects(locale: ReturnType<typeof getCurrentLocale>): readonly Proj
       status: "live",
     },
     {
-      name: "Tibetan Alphabet Pronunciation",
-      description: "Click any letter to hear it: all 30 consonants and 4 vowels are real human recordings (Amdo Tibetan), with a listening quiz, self-recording override, and hide-the-transliteration self-test.",
+      name: "Tibetan Alphabet Kit (Pronunciation · Words · Typing)",
+      description: "All 30 consonants and 4 vowels are real human recordings (Amdo Tibetan) — click any letter to hear it. Three pages: the alphabet with a listening quiz, recording override and hide-the-transliteration self-test; a per-letter word page with real word audio and Chinese glosses; and a typing trainer whose on-screen keyboard matches the Microsoft Tibetan IME layout (green when correct, red when wrong).",
       tags: ["HTML5", "Web Audio", "Tibetan", "Learning"],
       href: "/tibetan/",
       status: "live",
