@@ -115,8 +115,17 @@ export async function uploadAssetToR2(input: AssetUploadInput) {
   });
 }
 
-export async function getR2Asset(key: string) {
-  return env.CMS_STORAGE.get(key);
+/**
+ * 读取 R2 对象。传入请求头（含 Range）时走 R2 的原生分片读取，
+ * 返回的 object.range 会带上实际区间，调用方据此回 206。
+ *
+ * 注意：R2 的 range 选项只接受 Headers 对象或 {offset,length}/{suffix}，
+ * 传裸字符串会抛 HTTPError。
+ */
+export async function getR2Asset(key: string, headers?: Headers | null) {
+  return headers
+    ? env.CMS_STORAGE.get(key, { range: headers })
+    : env.CMS_STORAGE.get(key);
 }
 
 export async function deleteR2Asset(key: string) {

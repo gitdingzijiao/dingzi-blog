@@ -95,7 +95,7 @@
 <div id="videoModal">
   <button id="videoClose" title="关闭 (Esc)">✕</button>
   <video id="flyVideo" controls playsinline preload="metadata"
-         poster="./flythrough-poster.jpg" src="./wuhu-flythrough.mp4"></video>
+         poster="./flythrough-poster.jpg" src="/uploads/2026/09/24b950f6b502a1e7.mp4"></video>
   <div id="videoCap">吾乎村 3D 漫游 · 28 秒 · Blender EEVEE 渲染 · 高空环绕 → 低空掠过村庄 → 拉升回望</div>
 </div>
 
@@ -326,46 +326,17 @@ function toggleMode() { fps ? exitFPS() : enterFPS(); }
 $('modeBtn').onclick = toggleMode;
 
 // ── 漫游视频弹层 ──
+// 视频存在 R2（/uploads/…），该路由已支持 Range 请求，所以拖动进度条是原生行为
 const vModal = $('videoModal'), vVideo = $('flyVideo');
-let vBlobUrl = null, vSwapped = false;
-
-// 服务器不支持 Range 请求（拖进度条会卡），所以后台把视频取成本地 blob。
-// 换成 blob 后整个文件都在内存里，拖动、跳转都瞬时。
-async function prefetchVideo() {
-  if (vSwapped) return;
-  try {
-    const r = await fetch(vVideo.getAttribute('src'));
-    if (!r.ok) return;
-    const blob = await r.blob();
-    // 若用户已经在看，切换后要续上进度和播放状态
-    const wasOpen = vModal.classList.contains('on');
-    const t = vVideo.currentTime;
-    const wasPlaying = wasOpen && !vVideo.paused;
-    vBlobUrl = URL.createObjectURL(blob);
-    vVideo.src = vBlobUrl;
-    vSwapped = true;
-    if (wasOpen) {
-      vVideo.currentTime = t;
-      if (wasPlaying) vVideo.play().catch(() => {});
-    }
-    $('videoCap').textContent += ' · 已缓存，可自由拖动';
-  } catch (e) { /* 预取失败不影响正常播放 */ }
-}
-// 3D 场景加载完就尽快预取
-addEventListener('load', () => {
-  const go = () => ('requestIdleCallback' in window)
-    ? requestIdleCallback(prefetchVideo, { timeout: 3000 })
-    : setTimeout(prefetchVideo, 2000);
-  setTimeout(go, 1500);
-});
 
 function openVideo() {
   vModal.classList.add('on');
   try { vVideo.currentTime = 0; } catch (e) {}
   const play = () => vVideo.play().catch(() => {});
-  // 视频可能还没就绪，直接 play() 会被拒；等 canplay 再播更稳
-  if (vVideo.readyState >= 2) play();
-  else vVideo.addEventListener('canplay', play, { once: true });
+  play();                                            // 先试一次
+  if (vVideo.readyState < 2) {                       // 没成就等就绪再播
+    vVideo.addEventListener('canplay', play, { once: true });
+  }
 }
 function closeVideo() {
   vModal.classList.remove('on');
