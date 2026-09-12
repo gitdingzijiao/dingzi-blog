@@ -50,6 +50,13 @@ function getProjects(locale: ReturnType<typeof getCurrentLocale>): readonly Proj
         status: "live",
       },
       {
+        name: "枪战（Firefight）",
+        description: "Three.js 第一人称射击：WASD 移动、鼠标瞄准、四种武器（手枪 / 冲锋枪 / 步枪 / 霰弹枪），敌人会寻路、包抄并开火，波次逐波加难。地图、贴图、音效全部程序化生成，零外部资源；含小地图与实时 HUD。",
+        tags: ["Three.js", "WebGL", "游戏", "FPS"],
+        href: "/fps/",
+        status: "live",
+      },
+      {
         name: "拳击格斗（Fight!）",
         description: "纯前端 Canvas 格斗小游戏：与电脑 AI 实时对打，出拳判定、受击硬直、血条对战。几十 KB，秒开即玩。",
         tags: ["HTML5", "Canvas", "游戏"],
@@ -85,6 +92,13 @@ function getProjects(locale: ReturnType<typeof getCurrentLocale>): readonly Proj
       description: "Turn natural language into editable flowcharts, architecture diagrams, and mind maps. Built on the open-source draw.io editor; DeepSeek generates draw.io-compatible XML with continuous chat-based editing and live preview.",
       tags: ["AI", "draw.io", "DeepSeek", "Full-stack"],
       href: "/draw/",
+      status: "live",
+    },
+    {
+      name: "Firefight — First-Person Shooter",
+      description: "A Three.js FPS: WASD movement, mouse aim, four weapons (pistol / SMG / rifle / shotgun). Enemies pathfind, flank and shoot back across escalating waves. Map, textures and every sound effect are generated procedurally — no external assets. Includes a minimap and live HUD.",
+      tags: ["Three.js", "WebGL", "Game", "FPS"],
+      href: "/fps/",
       status: "live",
     },
     {

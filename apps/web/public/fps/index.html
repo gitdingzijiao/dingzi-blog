@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>枪战 · Firefight</title>
+<style>
+  :root{
+    --hp:#3ddc84; --hp-low:#ff4b4b; --amber:#ffc23d; --blue:#5cc8ff;
+    --ink:#e8eefc; --dim:#8b9ab8;
+  }
+  *{margin:0;padding:0;box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  html,body{width:100%;height:100%;overflow:hidden;background:#05070d}
+  body{font-family:'Segoe UI','Microsoft YaHei',system-ui,sans-serif;color:var(--ink);cursor:default}
+  canvas#gl{display:block;width:100%;height:100%}
+
+  #hud{position:fixed;inset:0;pointer-events:none;z-index:5}
+
+  /* 准星 */
+  #cross{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:26px;height:26px}
+  #cross i{position:absolute;background:rgba(255,255,255,.85);box-shadow:0 0 3px rgba(0,0,0,.9);transition:.06s}
+  #cross i:nth-child(1){left:50%;top:0;width:2px;height:8px;margin-left:-1px}
+  #cross i:nth-child(2){left:50%;bottom:0;width:2px;height:8px;margin-left:-1px}
+  #cross i:nth-child(3){top:50%;left:0;height:2px;width:8px;margin-top:-1px}
+  #cross i:nth-child(4){top:50%;right:0;height:2px;width:8px;margin-top:-1px}
+  #cross.hit i{background:var(--hp)}
+  #cross.kill i{background:#ff8a3d}
+  #cross.dot::after{content:'';position:absolute;left:50%;top:50%;width:2px;height:2px;margin:-1px 0 0 -1px;
+    background:rgba(255,255,255,.9);border-radius:50%}
+
+  /* 底部左：血量 */
+  #hpBox{position:absolute;left:26px;bottom:24px;width:240px}
+  #hpBar{height:12px;border-radius:7px;background:rgba(255,255,255,.12);overflow:hidden;
+    border:1px solid rgba(255,255,255,.18)}
+  #hpFill{height:100%;width:100%;background:linear-gradient(90deg,var(--hp),#7ef0b0);transition:width .15s}
+  #hpFill.low{background:linear-gradient(90deg,var(--hp-low),#ff8a8a)}
+  #hpTxt{display:flex;justify-content:space-between;font-size:12px;color:var(--dim);margin-top:6px;letter-spacing:.5px}
+
+  /* 底部右：弹药 */
+  #ammoBox{position:absolute;right:26px;bottom:20px;text-align:right}
+  #ammoMag{font-size:44px;font-weight:800;line-height:1;letter-spacing:1px}
+  #ammoMag.empty{color:var(--hp-low)}
+  #ammoRes{font-size:14px;color:var(--dim);margin-top:2px}
+  #wpnName{font-size:13px;color:var(--amber);margin-top:8px;letter-spacing:2px;font-weight:700}
+
+  /* 顶部右：波次 / 分数 */
+  #topBox{position:absolute;right:26px;top:20px;text-align:right;font-size:13px;color:var(--dim);line-height:1.9}
+  #topBox b{color:var(--ink);font-size:16px}
+  #waveNum{color:var(--amber)}
+
+  /* 小地图 */
+  #mapWrap{position:absolute;left:26px;top:20px;width:184px;height:184px;border-radius:12px;overflow:hidden;
+    border:1px solid rgba(140,180,255,.22);background:rgba(6,10,20,.62);backdrop-filter:blur(3px)}
+  #minimap{width:100%;height:100%;display:block}
+
+  /* 受伤红晕 */
+  #vig{position:absolute;inset:0;opacity:0;transition:opacity .28s;
+    background:radial-gradient(ellipse at center,rgba(255,0,0,0) 42%,rgba(190,0,0,.5) 100%)}
+  /* 开枪白闪 */
+  #flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none}
+
+  /* 中央提示 */
+  #msg{position:absolute;left:50%;top:26%;transform:translateX(-50%);font-size:26px;font-weight:800;
+    letter-spacing:3px;text-shadow:0 3px 14px rgba(0,0,0,.8);opacity:0;transition:opacity .3s}
+  #msg.on{opacity:1}
+  #hint{position:absolute;left:50%;bottom:88px;transform:translateX(-50%);font-size:12.5px;color:var(--dim);
+    letter-spacing:.5px;text-align:center;line-height:1.8}
+  #hint kbd{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.22);border-radius:4px;
+    padding:1px 6px;font-family:inherit;font-size:11.5px}
+
+  /* 覆盖层：开始 / 暂停 / 死亡 */
+  #ov{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;
+    background:radial-gradient(ellipse at center,rgba(10,16,30,.86),rgba(3,5,10,.97));cursor:pointer}
+  #ov.hide{display:none}
+  #ovCard{text-align:center;max-width:520px;padding:34px 40px}
+  #ovTitle{font-size:40px;font-weight:900;letter-spacing:6px;margin-bottom:6px;
+    background:linear-gradient(180deg,#fff,#8fb6ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+  #ovSub{font-size:13.5px;color:var(--dim);letter-spacing:1px;margin-bottom:24px}
+  #ovStats{display:flex;gap:26px;justify-content:center;margin:20px 0 26px}
+  #ovStats div{text-align:center}
+  #ovStats b{display:block;font-size:26px;font-weight:800}
+  #ovStats span{font-size:11.5px;color:var(--dim);letter-spacing:1px}
+  #ovKey{display:inline-block;margin-top:6px;font-size:15px;font-weight:800;letter-spacing:2px;
+    background:var(--amber);color:#20160a;border-radius:12px;padding:13px 34px;box-shadow:0 5px 0 #b8860b}
+  #ovHelp{margin-top:22px;font-size:12px;color:var(--dim);line-height:2.1}
+  #ovHelp kbd{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:4px;padding:1px 6px;font-size:11.5px}
+  #ovHelp i{color:var(--amber);font-style:normal}
+</style>
+</head>
+<body>
+
+<canvas id="gl"></canvas>
+
+<div id="hud">
+  <div id="cross"><i></i><i></i><i></i><i></i></div>
+
+  <div id="mapWrap"><canvas id="minimap" width="368" height="368"></canvas></div>
+
+  <div id="topBox">
+    第 <b id="waveNum">1</b> 波 · 剩余 <b id="leftNum">0</b><br>
+    得分 <b id="scoreNum">0</b>
+  </div>
+
+  <div id="hpBox">
+    <div id="hpBar"><div id="hpFill"></div></div>
+    <div id="hpTxt"><span>生命</span><span id="hpNum">100</span></div>
+  </div>
+
+  <div id="ammoBox">
+    <div id="ammoMag">12</div>
+    <div id="ammoRes">/ 120</div>
+    <div id="wpnName">手枪</div>
+  </div>
+
+  <div id="vig"></div>
+  <div id="flash"></div>
+  <div id="msg"></div>
+  <div id="hint">
+    <kbd>WASD</kbd> 移动 · <kbd>Shift</kbd> 疾跑 · <kbd>空格</kbd> 跳 · <kbd>鼠标</kbd> 瞄准 · <kbd>左键</kbd> 开火<br>
+    <kbd>1</kbd>-<kbd>4</kbd> 换枪 · <kbd>R</kbd> 换弹 · <kbd>Esc</kbd> 暂停
+  </div>
+</div>
+
+<div id="ov">
+  <div id="ovCard">
+    <div id="ovTitle">枪 战</div>
+    <div id="ovSub">FIREFIGHT · 抵挡进攻的波次</div>
+    <div id="ovStats" style="display:none">
+      <div><b id="stScore">0</b><span>得分</span></div>
+      <div><b id="stWave">1</b><span>波次</span></div>
+      <div><b id="stKills">0</b><span>击杀</span></div>
+      <div><b id="stAcc">0%</b><span>命中率</span></div>
+    </div>
+    <div id="ovKey">点击开始</div>
+    <div id="ovHelp">
+      <kbd>WASD</kbd> 移动 · <kbd>Shift</kbd> 疾跑 · <kbd>空格</kbd> 跳跃 · <kbd>左键</kbd> 射击 · <kbd>右键</kbd> 瞄准<br>
+      <kbd>1</kbd> 手枪 · <kbd>2</kbd> 冲锋枪 · <kbd>3</kbd> 步枪 · <kbd>4</kbd> 霰弹枪 · <kbd>R</kbd> 换弹 · <kbd>Esc</kbd> 暂停<br>
+      <i>音效全部由 Web Audio 实时合成，无需任何音频文件</i>
+    </div>
+  </div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "./libs/three.module.js"
+  }
+}
+</script>
+<script type="module" src="./js/game.js"></script>
+</body>
+</html>
