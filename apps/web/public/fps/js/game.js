@@ -4,8 +4,27 @@
  * 全部程序化生成：几何、贴图、音效都不依赖外部资源。
  */
 import * as THREE from "three";
+import { RGBELoader } from "three/addons/loaders/RGBELoader.js";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { Sound } from "./sound.js";
 import { buildLevel, TILE } from "./level.js";
+
+// ── Blender 生成的模型（见 fps-blender/build-models.py）──
+const MODELS = { enemy: null, weapons: [null, null, null, null] };
+const gltfLoader = new GLTFLoader();
+function loadModels() {
+  const jobs = [];
+  const one = (url) => new Promise((res) => gltfLoader.load(url, (g) => res(g.scene), undefined, () => res(null)));
+  jobs.push(one("./assets/models/enemy.glb").then((s) => { MODELS.enemy = s; }));
+  ["pistol", "smg", "rifle", "shotgun"].forEach((k, i) => {
+    jobs.push(one(`./assets/models/weapon_${k}.glb`).then((s) => { MODELS.weapons[i] = s; }));
+  });
+  return Promise.all(jobs);
+}
 
 // ────────────────────────────────────────────────────────────
 // 配置
@@ -31,29 +50,67 @@ renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75));
 renderer.setSize(innerWidth, innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;   // 电影感色调映射
+renderer.toneMappingExposure = 1.05;
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x16203a);
-scene.fog = new THREE.Fog(0x16203a, 50, 135);
+scene.background = new THREE.Color(0x121826);          // 干净的暗色天空，让材质对比出来
+scene.fog = new THREE.Fog(0x1a2231, 46, 175);
 
 const camera = new THREE.PerspectiveCamera(76, innerWidth / innerHeight, 0.1, 400);
 camera.rotation.order = "YXZ";
 
-// 灯光
-scene.add(new THREE.HemisphereLight(0xcadcff, 0x3c4456, 1.15));
-const sun = new THREE.DirectionalLight(0xffe9c4, 1.65);
+// ── HDRI 环境光照（Poly Haven, CC0）──
+// 只作为 environment（漫反射环境光 + 金属反射），不当背景 ——
+// 这样既有真实材质响应，又不会被明亮天空冲淡画面
+let envMap = null;
+const pmrem = new THREE.PMREMGenerator(renderer);
+pmrem.compileEquirectangularShader();
+new RGBELoader().load(
+  "./assets/hdri/the_sky_is_on_fire_1k.hdr",
+  (hdr) => {
+    hdr.mapping = THREE.EquirectangularReflectionMapping;
+    envMap = pmrem.fromEquirectangular(hdr).texture;
+    scene.environment = envMap;
+    hdr.dispose();
+    pmrem.dispose();
+  },
+  undefined,
+  () => {}
+);
+
+// 灯光：太阳负责投影和明暗对比，环境光由 HDRI 提供
+const sun = new THREE.DirectionalLight(0xffd9a8, 2.4);
 sun.position.set(38, 62, 24);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.bias = -0.0006;
+sun.shadow.normalBias = 0.03;
+// 默认正交阴影相机只有 ±5，必须改边界并**刷新投影矩阵**，否则整场都没有阴影
 sun.shadow.camera.near = 1;
-sun.shadow.camera.far = 200;
-const SS = 70;
-Object.assign(sun.shadow.camera, { left:-SS, right:SS, top:SS, bottom:-SS });
-sun.shadow.bias = -0.0008;
+sun.shadow.camera.far = 190;
+sun.shadow.camera.left = -62;
+sun.shadow.camera.right = 62;
+sun.shadow.camera.top = 62;
+sun.shadow.camera.bottom = -62;
+sun.shadow.camera.updateProjectionMatrix();
 scene.add(sun);
-const fill = new THREE.DirectionalLight(0x7fa0ff, 0.45);
+scene.add(sun.target);
+const fill = new THREE.DirectionalLight(0x7fa0ff, 0.4);
 fill.position.set(-30, 26, -34);
 scene.add(fill);
+
+// ── 后期处理：4x MSAA 渲染目标 + 泛光（枪口火光/灯会发光）+ 色调映射输出 ──
+const _dbSize = renderer.getDrawingBufferSize(new THREE.Vector2());
+const composerTarget = new THREE.WebGLRenderTarget(_dbSize.x, _dbSize.y, {
+  type: THREE.HalfFloatType,
+  samples: 4,
+});
+const composer = new EffectComposer(renderer, composerTarget);
+composer.addPass(new RenderPass(scene, camera));
+const bloomPass = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.42, 0.55, 0.85);
+composer.addPass(bloomPass);
+composer.addPass(new OutputPass());
 
 // 枪口闪光灯（跟着相机）
 const muzzleLight = new THREE.PointLight(0xffcc66, 0, 16, 2);
@@ -142,9 +199,9 @@ const vm = new THREE.Group();
 camera.add(vm);
 scene.add(camera);
 
-const gunMat = new THREE.MeshStandardMaterial({ color: 0x2b2f38, roughness: 0.55, metalness: 0.75 });
-const gunMat2 = new THREE.MeshStandardMaterial({ color: 0x14171c, roughness: 0.7, metalness: 0.5 });
-const accentMat = new THREE.MeshStandardMaterial({ color: 0xffb03a, roughness: 0.5, metalness: 0.4, emissive: 0x341c00 });
+const gunMat = new THREE.MeshStandardMaterial({ color: 0x23262c, roughness: 0.34, metalness: 0.95, envMapIntensity: 1.15 });
+const gunMat2 = new THREE.MeshStandardMaterial({ color: 0x111418, roughness: 0.6, metalness: 0.6, envMapIntensity: 0.9 });
+const accentMat = new THREE.MeshStandardMaterial({ color: 0x8a5a1c, roughness: 0.45, metalness: 0.7, emissive: 0x1a0d00, envMapIntensity: 0.8 });
 
 function buildGunModels() {
   const groups = [];
@@ -294,11 +351,29 @@ function updateFx(dt) {
 // ────────────────────────────────────────────────────────────
 const enemies = [];
 const hittable = [];        // 用于射线检测的网格 → 反向引用
-const bodyMat = new THREE.MeshStandardMaterial({ color: 0x7a2230, roughness: 0.75, metalness: 0.25 });
-const headMat = new THREE.MeshStandardMaterial({ color: 0x2a2f3a, roughness: 0.6, metalness: 0.5 });
-const eyeMat = new THREE.MeshBasicMaterial({ color: 0xff3b3b });
+const bodyMat = new THREE.MeshStandardMaterial({ color: 0x6b1a24, roughness: 0.55, metalness: 0.45, envMapIntensity: 0.75 });
+const headMat = new THREE.MeshStandardMaterial({ color: 0x1b2028, roughness: 0.28, metalness: 0.95, envMapIntensity: 1.1 });
+const eyeMat = new THREE.MeshStandardMaterial({
+  color: 0x2a0000, emissive: 0xff2418, emissiveIntensity: 2.4, roughness: 0.35, metalness: 0,
+});
+eyeMat.userData.glow = true;   // 受击闪白时跳过它，保持发光
 
 function makeEnemyModel() {
+  // 优先用 Blender 模型
+  if (MODELS.enemy) {
+    const g = MODELS.enemy.clone(true);
+    g.traverse((o) => {
+      if (!o.isMesh) return;
+      o.castShadow = true;
+      o.material = o.material.clone();          // 每个敌人独立材质，受击闪白互不影响
+      if (/glow/i.test(o.material.name || "")) o.material.userData.glow = true;
+    });
+    return g;
+  }
+  return makeBoxEnemyModel();
+}
+
+function makeBoxEnemyModel() {
   const g = new THREE.Group();
   const body = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.98, 0.44), bodyMat.clone());
   body.position.y = 1.05; body.castShadow = true;
@@ -402,7 +477,12 @@ function updateEnemies(dt) {
     if (e.hitT > 0) {
       e.hitT -= dt;
       const on = e.hitT > 0 && Math.floor(e.hitT * 40) % 2 === 0;
-      e.model.traverse((o) => { if (o.material && o.material.emissive) o.material.emissive.setHex(on ? 0xffffff : 0x000000); });
+      e.model.traverse((o) => {
+        if (o.material && o.material.emissive && !o.material.userData.glow) {
+          o.material.emissive.setHex(on ? 0xffffff : 0x000000);
+          o.material.emissiveIntensity = on ? 0.6 : 1;
+        }
+      });
     }
 
     const toP = new THREE.Vector3().subVectors(player.pos, e.pos);
@@ -823,6 +903,8 @@ addEventListener("resize", () => {
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
+  composer.setSize(innerWidth, innerHeight);
+  bloomPass.resolution.set(innerWidth, innerHeight);
 });
 
 // ────────────────────────────────────────────────────────────
@@ -900,20 +982,32 @@ function updateCamera(dt) {
   camera.position.set(player.pos.x + bobX * 0.3, player.pos.y + bobY, player.pos.z);
   camera.rotation.set(player.pitch + recoil * 0.6, player.yaw, Math.sin(player.bob) * 0.006);
 
-  // 视图模型
-  const gm = gunModels[wi];
-  gunModels.forEach((g, i) => { g.visible = i === wi && state !== "menu"; });
+  // 视图模型：优先用 Blender 生成的 GLB，没有就退回盒子模型
+  const isGlb = !!MODELS.weapons[wi];
+  const gm = isGlb ? MODELS.weapons[wi] : gunModels[wi];
+  gunModels.forEach((g, i) => { g.visible = !MODELS.weapons[wi] && i === wi && state !== "menu"; });
+  MODELS.weapons.forEach((g, i) => { if (g) g.visible = i === wi && state !== "menu"; });
   if (gm) {
     const aimOff = aiming ? -0.10 : 0;
     const zKick = recoil * 0.55;
     const drop = switchT > 0 ? (switchT / 0.28) * 0.42 : 0;
-    gm.position.set(
-      0.30 + (aiming ? -0.30 : 0),
-      -0.20 + bobY * 0.5 - drop + (aiming ? 0.085 : 0),
-      -0.60 + zKick + aimOff
-    );
-    gm.rotation.set(-recoil * 3.4 - drop * 1.4, 0.03, 0);
-    gm.scale.setScalar(aiming ? 0.78 : 0.9);
+    if (isGlb) {
+      gm.position.set(
+        0.19 + (aiming ? -0.19 : 0),
+        -0.16 + bobY * 0.5 - drop + (aiming ? 0.07 : 0),
+        -0.34 + zKick + aimOff
+      );
+      gm.rotation.set(-recoil * 2.4 - drop * 1.4, Math.PI + 0.02, 0);
+      gm.scale.setScalar((aiming ? 0.52 : 0.62));
+    } else {
+      gm.position.set(
+        0.30 + (aiming ? -0.30 : 0),
+        -0.20 + bobY * 0.5 - drop + (aiming ? 0.085 : 0),
+        -0.60 + zKick + aimOff
+      );
+      gm.rotation.set(-recoil * 3.4 - drop * 1.4, 0.03, 0);
+      gm.scale.setScalar(aiming ? 0.78 : 0.9);
+    }
   }
   if (switchT > 0) switchT = Math.max(0, switchT - dt);
 
@@ -944,7 +1038,7 @@ function loop() {
   if (state === "play") { drawMinimap(); if (Math.floor(now / 250) % 2 === 0) updateHud(); }
 
   updateCamera(dt);
-  renderer.render(scene, camera);
+  composer.render();
 }
 
 // 初始化
@@ -953,6 +1047,20 @@ updateCamera(0);
 showOverlay("menu");
 updateHud();
 loop();
+
+// 异步加载 Blender 模型，加载好自动换上（没加载完就先显示盒子模型）
+loadModels().then(() => {
+  MODELS.weapons.forEach((s) => {
+    if (!s) return;
+    s.traverse((o) => {
+      if (o.isMesh) { o.castShadow = false; o.frustumCulled = false; o.renderOrder = 2; }
+    });
+    s.visible = false;
+    vm.add(s);
+  });
+  console.log("[models] Blender 模型已加载:", MODELS.enemy ? "敌人✓" : "敌人✗",
+    "武器", MODELS.weapons.filter(Boolean).length, "/4");
+});
 
 // 供自动化测试探查
 window.__game = {

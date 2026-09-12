@@ -51,8 +51,8 @@ function getProjects(locale: ReturnType<typeof getCurrentLocale>): readonly Proj
       },
       {
         name: "枪战（Firefight）",
-        description: "Three.js 第一人称射击：WASD 移动、鼠标瞄准、四种武器（手枪 / 冲锋枪 / 步枪 / 霰弹枪），敌人会寻路、包抄并开火，波次逐波加难。地图、贴图、音效全部程序化生成，零外部资源；含小地图与实时 HUD。",
-        tags: ["Three.js", "WebGL", "游戏", "FPS"],
+        description: "Three.js 第一人称射击：WASD 移动、鼠标瞄准、四种武器（手枪 / 冲锋枪 / 步枪 / 霰弹枪），敌人会寻路、包抄并开火，波次逐波加难。武器与敌人模型在 Blender 里建模导出 GLB，场景用 Poly Haven 的 HDRI 环境光与 PBR 材质，配 ACES 色调映射、泛光、实时阴影；地图与音效程序化生成。含小地图与实时 HUD。",
+        tags: ["Three.js", "Blender", "WebGL", "FPS"],
         href: "/fps/",
         status: "live",
       },
@@ -96,8 +96,8 @@ function getProjects(locale: ReturnType<typeof getCurrentLocale>): readonly Proj
     },
     {
       name: "Firefight — First-Person Shooter",
-      description: "A Three.js FPS: WASD movement, mouse aim, four weapons (pistol / SMG / rifle / shotgun). Enemies pathfind, flank and shoot back across escalating waves. Map, textures and every sound effect are generated procedurally — no external assets. Includes a minimap and live HUD.",
-      tags: ["Three.js", "WebGL", "Game", "FPS"],
+      description: "A Three.js FPS: WASD movement, mouse aim, four weapons (pistol / SMG / rifle / shotgun). Enemies pathfind, flank and shoot back across escalating waves. Weapons and enemies are modelled in Blender and exported as GLB; the scene uses a Poly Haven HDRI environment with PBR materials, ACES tone mapping, bloom and real-time shadows. The map and every sound effect are generated procedurally. Includes a minimap and live HUD.",
+      tags: ["Three.js", "Blender", "WebGL", "FPS"],
       href: "/fps/",
       status: "live",
     },
