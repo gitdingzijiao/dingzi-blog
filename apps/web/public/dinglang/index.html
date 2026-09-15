@@ -200,6 +200,176 @@
   }
   @media (max-width: 1000px) { #examples { max-width: 260px; } }
   @media (max-width: 860px)  { #examples { max-width: 180px; } }
+
+  /* 活动栏：只在桌面版显示 */
+  .activitybar { display: none; }
+
+  /* ══════════════════════════════════════════════════════════
+     VS Code 风格 —— 只作用于桌面版（body.desktop）
+     网页版保持原来清爽的样子，两者互不影响
+     ══════════════════════════════════════════════════════════ */
+  body.desktop {
+    /* VS Code Dark+ 配色 */
+    --bg: #1e1e1e;
+    --panel: #252526;
+    --panel2: #2d2d30;
+    --fg: #d4d4d4;
+    --dim: #858585;
+    --accent: #0098ff;
+    --green: #89d185;
+    --red: #f48771;
+    --yellow: #cca700;
+    --purple: #c586c0;
+    --border: #3c3c3c;
+    --vscode-blue: #007acc;
+    --vscode-act: #333333;
+    --vscode-tab: #2d2d2d;
+    font-family: "Segoe UI", "Microsoft YaHei", var(--tib), sans-serif;
+    font-size: 13px;
+  }
+
+  /* 顶栏 → 像 VS Code 的编辑器工具条：紧凑、深色 */
+  body.desktop header {
+    padding: 6px 12px; gap: 10px; background: var(--vscode-tab);
+    border-bottom: 1px solid var(--border); min-height: 0;
+  }
+  body.desktop .logo { font-size: 14px; font-weight: 600; color: var(--fg); }
+  body.desktop .logo .ver { font-size: 10px; padding: 0 5px; border-color: #555; color: var(--dim); }
+  body.desktop select,
+  body.desktop button,
+  body.desktop .reflink {
+    font-size: 12.5px; padding: 4px 10px; border-radius: 3px;
+    background: #3a3d41; border-color: #3a3d41; color: var(--fg);
+  }
+  body.desktop select:hover, body.desktop button:hover, body.desktop .reflink:hover {
+    background: #45494e; border-color: #45494e;
+  }
+  body.desktop button.primary {
+    background: var(--vscode-blue); border-color: var(--vscode-blue); color: #fff;
+  }
+  body.desktop button.primary:hover { background: #1a8ad4; }
+  body.desktop kbd { display: none; }
+
+  /* ── 主体：CSS Grid 摆成 VS Code 的三栏两行 ── */
+  body.desktop main {
+    display: grid;
+    grid-template-columns: 48px 250px minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) minmax(120px, 34%);
+    grid-template-areas:
+      "act side editor"
+      "act side panel";
+  }
+  body.desktop .activitybar { grid-area: act; }
+  body.desktop #sidebar     { grid-area: side; }
+  body.desktop #editorpane  { grid-area: editor; }
+  body.desktop #outpane     { grid-area: panel; }
+
+  /* ── 活动栏 ── */
+  body.desktop .activitybar {
+    display: flex; flex-direction: column; align-items: center;
+    background: var(--vscode-act); border-right: 1px solid var(--border);
+    padding: 4px 0; gap: 2px;
+  }
+  body.desktop .act {
+    width: 48px; height: 42px; padding: 0; border: none; border-radius: 0;
+    background: none; color: #858585; font-size: 19px; line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+    border-left: 2px solid transparent; cursor: pointer;
+  }
+  body.desktop .act:hover { color: #fff; background: none; border-color: transparent; }
+  body.desktop .act.act-on { color: #fff; border-left-color: #fff; }
+
+  /* ── 侧边栏：VS Code 的资源管理器 ── */
+  body.desktop #sidebar {
+    width: auto; background: var(--panel); border-right: 1px solid var(--border);
+  }
+  body.desktop .sb-head {
+    padding: 8px 12px 6px; border-bottom: none;
+    font-size: 11px; letter-spacing: 0.6px; text-transform: uppercase;
+    color: #bbbbbb; font-weight: 600;
+  }
+  body.desktop .sb-head .ttl { font-size: 11px; letter-spacing: 0.6px; text-transform: uppercase; color: #bbbbbb; }
+  body.desktop .sb-head button {
+    background: none; border: none; color: #cccccc; font-size: 14px; padding: 0 4px;
+  }
+  body.desktop .sb-head button:hover { background: #ffffff1a; }
+  body.desktop .sb-path {
+    padding: 3px 12px 6px; font-size: 11px; color: #8a8a8a;
+    border-bottom: none; font-family: var(--codefont);
+  }
+  body.desktop .sb-list { padding: 2px 0 6px; }
+  body.desktop .sb-item {
+    padding: 3px 10px 3px 20px; font-size: 13px; border-radius: 0;
+    color: #cccccc;
+  }
+  body.desktop .sb-item:hover { background: #2a2d2e; }
+  body.desktop .sb-item.active { background: #37373d; color: #fff; }
+  body.desktop .sb-item .ico { font-size: 13px; }
+  body.desktop .sb-item .sz { font-size: 10.5px; color: #6e6e6e; }
+  body.desktop .sb-foot { padding: 6px 8px; border-top: 1px solid var(--border); gap: 4px; }
+  body.desktop .sb-foot button {
+    background: #3a3d41; border: none; font-size: 12px; padding: 5px 0;
+  }
+  body.desktop .sb-foot button:hover { background: #45494e; }
+
+  /* ── 编辑器：像 VS Code 的标签页 ── */
+  body.desktop #editorpane { border-right: none; }
+  body.desktop .pane-head {
+    padding: 0; background: var(--vscode-tab); border-bottom: 1px solid var(--border);
+    min-height: 35px;
+  }
+  body.desktop .pane-head .tab {
+    padding: 0 16px; height: 35px; border-radius: 0; font-size: 13px;
+    background: var(--vscode-tab); color: #969696;
+    border-right: 1px solid var(--border); border-top: 1px solid transparent;
+  }
+  body.desktop .pane-head .tab:hover { background: var(--vscode-tab); color: #fff; }
+  body.desktop .pane-head .tab.active {
+    background: var(--bg); color: #fff; font-weight: 400;
+    border-top-color: var(--vscode-blue);
+  }
+  body.desktop .pane-head .right { padding-right: 12px; font-size: 12px; color: #8a8a8a; }
+
+  /* 底部面板：也是标签页样式 */
+  body.desktop #outpane { border-top: 1px solid var(--border); }
+  body.desktop #outpane .pane-head { min-height: 32px; }
+  body.desktop #outpane .tab {
+    height: 32px; padding: 0 13px; font-size: 12px; letter-spacing: 0.4px;
+    text-transform: uppercase; border-top: none; border-bottom: 1px solid transparent;
+  }
+  body.desktop #outpane .tab.active {
+    background: var(--vscode-tab); border-bottom-color: var(--vscode-blue);
+    border-top: none;
+  }
+
+  /* ── 语法配色改成 VS Code Dark+ ── */
+  body.desktop .c-com { color: #6a9955; font-style: normal; }
+  body.desktop .c-str { color: #ce9178; }
+  body.desktop .c-num { color: #b5cea8; }
+  body.desktop .c-kw  { color: #569cd6; font-weight: 400; }
+  body.desktop .c-bi  { color: #dcdcaa; }
+  body.desktop .c-op  { color: #d4d4d4; }
+  body.desktop .c-pun { color: #808080; }
+  body.desktop .c-id  { color: #d4d4d4; }
+  body.desktop .c-id.tib, body.desktop .c-str.tib { color: #c586c0; }
+
+  /* ── 状态栏：VS Code 的蓝色 ── */
+  body.desktop .status {
+    background: var(--vscode-blue); color: #fff; border-top: none;
+    padding: 0 12px; height: 24px; align-items: center;
+    font-size: 12px; font-family: "Segoe UI", sans-serif; gap: 16px;
+  }
+  body.desktop .status .live { color: #fff; }
+  body.desktop .status .st-right { margin-left: auto; color: #ffffffcc; }
+
+  /* 滚动条也模仿 VS Code */
+  body.desktop ::-webkit-scrollbar { width: 14px; height: 14px; }
+  body.desktop ::-webkit-scrollbar-track { background: transparent; }
+  body.desktop ::-webkit-scrollbar-thumb {
+    background: #424242; border: 3px solid var(--bg); border-radius: 8px;
+  }
+  body.desktop ::-webkit-scrollbar-thumb:hover { background: #4f4f4f; }
+  body.desktop ::-webkit-scrollbar-corner { background: transparent; }
 </style>
 </head>
 <body>
@@ -214,6 +384,13 @@
 </header>
 
 <main>
+  <!-- VS Code 风格的活动栏（只有桌面版显示）-->
+  <div class="activitybar" id="activitybar">
+    <button class="act act-on" data-panel="files" title="资源管理器">🗂</button>
+    <button class="act" data-panel="run" title="运行 (Ctrl+Enter)">▶</button>
+    <button class="act" data-panel="ref" title="参考手册">📖</button>
+  </div>
+
   <!-- 桌面版才有：本地文件浏览器 -->
   <aside id="sidebar">
     <div class="sb-head">
@@ -229,7 +406,7 @@
     </div>
   </aside>
 
-  <div class="pane">
+  <div class="pane" id="editorpane">
     <div class="pane-head">
       <button class="tab active">源码</button>
       <span class="right" id="srcinfo"></span>
@@ -244,7 +421,7 @@
     </div>
   </div>
 
-  <div class="pane">
+  <div class="pane" id="outpane">
     <div class="pane-head">
       <button class="tab active" data-tab="out">输出</button>
       <button class="tab" data-tab="js">生成的 JavaScript</button>
@@ -252,13 +429,16 @@
       <span class="right" id="outinfo"></span>
     </div>
     <div class="out" id="out"></div>
-    <div class="status">
-      <span id="st-status">就绪</span>
-      <span id="st-time"></span>
-      <span id="st-lines"></span>
-    </div>
   </div>
 </main>
+
+<!-- 状态栏：全宽，VS Code 里也是贯穿底部的 -->
+<div class="status" id="statusbar">
+  <span id="st-status">就绪</span>
+  <span id="st-time"></span>
+  <span id="st-lines"></span>
+  <span class="st-right" id="st-right"></span>
+</div>
 
 <script src="compiler.js"></script>
 <script src="highlight.js"></script>
@@ -467,7 +647,8 @@
     active: false,   // 是否连着本地文件 API
     cwd: '.',
     rel: '.',
-    file: null,      // 当前打开的文件（相对路径）
+    file: null,      // 当前打开的文件（相对路径）—— 从文件浏览器打开的
+    label: '未命名',  // 从示例加载时的显示名
     dirty: false,
   };
 
@@ -491,7 +672,15 @@
 
   exSel.addEventListener('change', function () {
     var ex = exs.filter(function (x) { return x.id === exSel.value; })[0];
-    if (ex) { codeEl.value = ex.code; paint(); run(); }
+    if (ex) {
+      codeEl.value = ex.code;
+      FS.file = null;                 // 从示例加载的，不是磁盘上的文件
+      FS.label = ex.name.replace(/^★\s*/, '');
+      setDirty(false);
+      paint();
+      updateEditorTab();
+      run();
+    }
   });
 
   $('run').addEventListener('click', run);
@@ -529,8 +718,32 @@
 
   function setDirty(v) {
     FS.dirty = v;
-    var t = document.querySelector('.pane-head .tab.active');
-    if (t) t.textContent = '源码' + (v ? ' ●' : '');
+    updateEditorTab();
+  }
+
+  /** 编辑器标签页文字：桌面版显示文件名，网页版显示「源码」 */
+  function updateEditorTab() {
+    var t = document.querySelector('#editorpane .tab');
+    if (!t) return;
+    if (document.body.classList.contains('desktop')) {
+      var name = FS.file ? FS.file.split('/').pop() : (FS.label || '未命名') + '.ding';
+      t.textContent = name + (FS.dirty ? ' ●' : '') + '  ✕';
+    } else {
+      t.textContent = '源码' + (FS.dirty ? ' ●' : '');
+    }
+  }
+
+  /** 状态栏右侧：语言 / 编码 / 行列号（VS Code 那种）*/
+  function updateStatusBar() {
+    var right = $('st-right');
+    if (!right) return;
+    if (!document.body.classList.contains('desktop')) { right.textContent = ''; return; }
+    var src = codeEl.value;
+    var upto = src.slice(0, codeEl.selectionStart);
+    var line = upto.split('\n').length;
+    var col = upto.length - upto.lastIndexOf('\n');
+    right.textContent = 'DingLang   UTF-8   Ln ' + line + ', Col ' + col;
+    $('st-lines').textContent = src.split('\n').length + ' 行 · ' + src.length + ' 字符';
   }
 
   function renderFileList(data) {
@@ -572,8 +785,10 @@
     api('/read?path=' + encodeURIComponent(p)).then(function (d) {
       codeEl.value = d.content;
       FS.file = p;
+      FS.label = null;
       setDirty(false);
       paint();
+      updateEditorTab();
       $('st-status').textContent = '已打开 ' + p;
       loadDir(FS.rel);
       run();
@@ -625,9 +840,16 @@
     if (f) {
       exSel.value = f.id;
       codeEl.value = f.code;
+      FS.file = null;
+      FS.label = f.name.replace(/^★\s*/, '');
+      setDirty(false);
       paint();
       run();
     }
+    // ⚠️ 这两个必须在加上 desktop 类之后调 ——
+    //    它们内部会判断 body 有没有 desktop 来决定显示文件名还是「源码」
+    updateEditorTab();
+    updateStatusBar();
     $('st-status').textContent = '桌面版 · ' + d.cwd;
   }).catch(function () {
     // 网页版：没有文件 API，侧栏保持隐藏
@@ -654,6 +876,41 @@
     }).then(function () { loadDir(FS.rel); openFile(p); });
   };
   $('sb-saveas').onclick = function () { saveFile(true); };
+
+  // ══════════════════════════════════════════════════════
+  //  VS Code 风格活动栏
+  // ══════════════════════════════════════════════════════
+  document.querySelectorAll('.activitybar .act').forEach(function (b) {
+    b.onclick = function () {
+      var p = b.dataset.panel;
+      if (p === 'files') {
+        // 折叠 / 展开侧边栏
+        var sb = $('sidebar');
+        var hidden = sb.style.display === 'none';
+        sb.style.display = hidden ? '' : 'none';
+        var on = !hidden;
+        b.classList.toggle('act-on', hidden);
+        // 折叠时把网格的第一列留白去掉
+        document.querySelector('main').style.gridTemplateColumns =
+          hidden ? '48px 0 minmax(0,1fr)' : '';
+      } else if (p === 'run') {
+        run();
+      } else if (p === 'ref') {
+        window.open('reference.html', '_blank');
+      }
+    };
+  });
+
+  // 光标移动 → 更新行列号
+  ['click', 'keyup', 'input', 'select'].forEach(function (evt) {
+    codeEl.addEventListener(evt, updateStatusBar);
+  });
+
+  // 桌面模式下顶栏的「源码」标签改成文件名
+  if (document.body.classList.contains('desktop')) {
+    updateEditorTab();
+    updateStatusBar();
+  }
 })();
 </script>
 </body>
