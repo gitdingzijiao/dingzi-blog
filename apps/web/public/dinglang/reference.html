@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DingLang 参考手册</title>
+<style>
+  :root {
+    --bg: #0d1117; --panel: #161b22; --panel2: #1c2128; --fg: #e6edf3;
+    --dim: #8b949e; --accent: #58a6ff; --green: #3fb950; --red: #f85149;
+    --purple: #d2a8ff; --orange: #ffa657; --yellow: #d29922; --border: #30363d;
+    --codefont: "Cascadia Code", Consolas, "SF Mono", Menlo,
+                "Microsoft Himalaya", "Noto Sans Tibetan", monospace;
+    --tib: "Microsoft Himalaya", "Jomolhari", "Noto Sans Tibetan";
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--fg);
+    font-family: var(--tib), -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+    font-size: 16px; line-height: 1.8;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* 布局 */
+  .layout { display: flex; max-width: 1240px; margin: 0 auto; }
+  nav {
+    width: 210px; flex-shrink: 0; padding: 28px 12px 60px 20px;
+    position: sticky; top: 0; height: 100vh; overflow-y: auto;
+    border-right: 1px solid var(--border);
+  }
+  nav .brand { font-size: 17px; font-weight: 600; margin-bottom: 4px; }
+  nav .brand .ver { font-size: 11px; color: var(--accent); border: 1px solid var(--accent);
+                    border-radius: 8px; padding: 1px 6px; margin-left: 5px; }
+  nav .sub { font-size: 12px; color: var(--dim); margin-bottom: 18px; }
+  nav a {
+    display: block; font-size: 13.5px; color: var(--dim); padding: 4px 9px;
+    border-radius: 6px; border-left: 2px solid transparent;
+  }
+  nav a:hover { background: var(--panel); color: var(--fg); text-decoration: none; }
+  nav a.sub2 { padding-left: 22px; font-size: 12.5px; }
+  nav .grp { font-size: 11px; color: #484f58; text-transform: uppercase;
+             letter-spacing: 1px; margin: 14px 0 4px 9px; }
+
+  main { flex: 1; min-width: 0; padding: 32px 34px 100px; }
+
+  h1 { font-size: 28px; margin-bottom: 6px; letter-spacing: -0.5px; }
+  .lead { color: var(--dim); font-size: 15px; margin-bottom: 34px; }
+  h2 {
+    font-size: 22px; margin: 46px 0 14px; padding-top: 12px;
+    border-top: 1px solid var(--border); scroll-margin-top: 16px;
+  }
+  h2:first-of-type { border-top: none; margin-top: 0; }
+  h3 { font-size: 16.5px; margin: 26px 0 10px; color: var(--fg); scroll-margin-top: 16px; }
+  h4 { font-size: 14.5px; margin: 18px 0 8px; color: var(--dim); font-weight: 600; }
+  p { margin-bottom: 12px; }
+  ul, ol { margin: 0 0 14px 22px; }
+  li { margin-bottom: 5px; }
+  code {
+    font-family: var(--codefont); font-size: 0.88em;
+    background: var(--panel2); padding: 1.5px 6px; border-radius: 5px;
+    color: var(--orange);
+  }
+  .tib { font-family: var(--tib); color: var(--purple); }
+
+  /* 表格 */
+  .tw { overflow-x: auto; margin: 12px 0 20px; }
+  table { border-collapse: collapse; width: 100%; font-size: 14.5px; }
+  th, td { text-align: left; padding: 8px 14px 8px 0; border-bottom: 1px solid var(--border); }
+  th { font-size: 12px; color: var(--dim); text-transform: uppercase;
+       letter-spacing: 0.5px; font-weight: 600; padding-bottom: 6px; }
+  td:first-child { white-space: nowrap; }
+  tr:hover td { background: rgba(255,255,255,.02); }
+
+  /* 代码块 */
+  pre.code {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px 18px; overflow-x: auto; margin: 10px 0 16px;
+    font-family: var(--codefont); font-size: 13.5px; line-height: 1.7;
+    white-space: pre;
+  }
+  pre.code .c-com { color: #6e7681; font-style: italic; }
+  pre.code .c-str { color: #7ee787; }
+  pre.code .c-num { color: var(--orange); }
+  pre.code .c-kw  { color: #ff7b72; font-weight: 600; }
+  pre.code .c-bi  { color: #79c0ff; }
+  pre.code .c-op  { color: #ff7b72; }
+  pre.code .c-pun { color: var(--dim); }
+  pre.code .c-id  { color: var(--fg); }
+
+  /* 提示框 */
+  .note {
+    background: rgba(88,166,255,.07); border-left: 3px solid var(--accent);
+    padding: 12px 16px; border-radius: 6px; margin: 14px 0; font-size: 14.5px;
+  }
+  .warn {
+    background: rgba(210,153,34,.08); border-left: 3px solid var(--yellow);
+    padding: 12px 16px; border-radius: 6px; margin: 14px 0; font-size: 14.5px;
+  }
+  .note b, .warn b { color: inherit; }
+
+  /* 数字表 */
+  .digits { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 6px; }
+  .digrow {
+    display: flex; align-items: center; gap: 10px; padding: 5px 10px;
+    background: var(--panel); border-radius: 7px; font-size: 14px;
+  }
+  .digrow .cp { font-family: var(--codefont); font-size: 11px; color: #484f58; min-width: 52px; }
+  .digrow .nm { flex: 1; color: var(--dim); font-size: 13px; }
+  .digrow .dg { font-size: 17px; letter-spacing: 1px; }
+  .digrow.star { border: 1px solid var(--purple); background: rgba(210,168,255,.08); }
+  .digrow.star .nm { color: var(--purple); font-weight: 600; }
+
+  .badge { font-size: 11px; padding: 1px 7px; border-radius: 9px;
+           background: rgba(88,166,255,.14); color: var(--accent); }
+  .badge.tib { background: rgba(210,168,255,.14); color: var(--purple); }
+
+  @media (max-width: 860px) {
+    nav { display: none; }
+    main { padding: 22px 18px 80px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="layout">
+<nav>
+  <div class="brand">DingLang<span class="ver">v0.1</span></div>
+  <div class="sub">参考手册</div>
+  <a href="#overview">概览</a>
+
+  <div class="grp">词法</div>
+  <a href="#digits">数字 ★</a>
+  <a href="#tibwords">藏文数词</a>
+  <a href="#strings">字符串</a>
+  <a href="#idents">标识符</a>
+  <a href="#comments">注释</a>
+
+  <div class="grp">语法</div>
+  <a href="#statements">语句</a>
+  <a href="#expressions">表达式</a>
+  <a href="#operators">运算符</a>
+  <a href="#functions">函数</a>
+
+  <div class="grp">内置</div>
+  <a href="#builtins">内置函数</a>
+  <a href="#tibaliases">藏文别名</a>
+
+  <div class="grp">规则</div>
+  <a href="#mangling">藏文改名规则</a>
+  <a href="#errors">错误处理</a>
+  <a href="#grammar">完整语法</a>
+  <a href="#limits">已知限制</a>
+</nav>
+
+<main>
+
+<h1>DingLang 参考手册</h1>
+<p class="lead">一个能写 <b>中文</b> 和 <b>藏文</b> 的小型编程语言，编译到 JavaScript。</p>
+
+<h2 id="overview">概览</h2>
+
+<pre class="code" data-ding># 变量（中文、藏文都行）
+let 名字 = "丁子"
+let བོད་ཡིག = "藏文"
+
+# 函数
+fn 平方(n) = n * n
+
+# if 是表达式，有返回值
+let 等级 = if 分数 >= 90 { "优" } else { "及格" }
+
+# 范围循环（藏文数字也能用）
+for i in ༡..=༡༠ { པར(i) }
+
+# 字符串插值
+པར("{名字} 说：{བོད་ཡིག}")</pre>
+
+<div class="note">
+  <b>打字提示</b>：关键字用英文（<code>let</code> <code>fn</code> <code>if</code>），
+  但<b>标识符</b>可以是任何文字 —— 中文、藏文、日文、韩文、阿拉伯文都行。
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<h2 id="digits">数字 <span class="badge tib">本语言特色</span></h2>
+
+<p>
+  数字字面量支持 <b>Unicode 里的所有十进制数字</b>（属性 <code>\p{Nd}</code>），
+  不只是 ASCII 的 <code>0-9</code>。词法分析阶段会统一转成 ASCII，
+  所以运行时完全等价。
+</p>
+
+<div class="digits" id="digitlist"></div>
+
+<h3>用法</h3>
+<pre class="code" data-ding>let པ = ༥              # 藏文 ༥ = 5
+let 年份 = ༢༠༢༦        # 多位：2026
+
+པར(༥ + ༧)             # 12
+པར(༨ * ༢)             # 16
+པར(༣.༡༤)              # 3.14（小数也支持）
+
+# 和 ASCII 混着写也行
+པར(༡2༣)               # 123
+པར(༥ + 5)             # 10
+
+# 范围循环
+for i in ༡..=༥ { པར(i) }   # 1 2 3 4 5</pre>
+
+<div class="warn">
+  <b>注意</b>：数字后面不能直接跟字母。
+  <code>let x = 1abc</code> 会报错（提示你是不是想写 <code>1 abc</code>）。
+</div>
+
+<h3>反向：把数字输出成藏文数字</h3>
+<pre class="code" data-ding>པར(藏文数字(2026))      # ༢༠༢༦
+པར(བོད་ཨང(2026))       # 同上（藏文别名）
+པར(བོད་ཨང(3.14))       # ༣.༡༤</pre>
+
+<!-- ═══════════════════════════════════════════ -->
+<h2 id="tibwords">藏文数词对照</h2>
+<p>编程里用的是<b>数字符号</b>（༡ ༢ ༣），但藏语口语里读的是<b>数词</b>（གཅིག གཉིས གསུམ）。两者分开：</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>数字</th><th>藏文数词</th><th>数字</th><th>藏文数词</th></tr></thead>
+<tbody>
+<tr><td><span class="tib" style="font-size:19px">༠</span></td><td class="tib">ཀླད་ཀོར</td><td><span class="tib" style="font-size:19px">༥</span></td><td class="tib">ལྔ</td></tr>
+<tr><td><span class="tib" style="font-size:19px">༡</span></td><td class="tib">གཅིག</td><td><span class="tib" style="font-size:19px">༦</span></td><td class="tib">དྲུག</td></tr>
+<tr><td><span class="tib" style="font-size:19px">༢</span></td><td class="tib">གཉིས</td><td><span class="tib" style="font-size:19px">༧</span></td><td class="tib">བདུན</td></tr>
+<tr><td><span class="tib" style="font-size:19px">༣</span></td><td class="tib">གསུམ</td><td><span class="tib" style="font-size:19px">༨</span></td><td class="tib">བརྒྱད</td></tr>
+<tr><td><span class="tib" style="font-size:19px">༤</span></td><td class="tib">བཞི</td><td><span class="tib" style="font-size:19px">༩</span></td><td class="tib">དགུ</td></tr>
+<tr><td><span class="tib" style="font-size:19px">༡༠</span></td><td class="tib">བཅུ</td><td><span class="tib" style="font-size:19px">༡༠༠</span></td><td class="tib">བརྒྱ</td></tr>
+<tr><td><span class="tib" style="font-size:19px">༡༠༠༠</span></td><td class="tib">སྟོང</td><td><span class="tib" style="font-size:19px">༡༠༠༠༠</span></td><td class="tib">ཁྲི</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="note">
+  藏文数词本身<b>也是合法的标识符</b>，可以当变量名用：
+  <code>let གཅིག = ༡</code> 完全没问题。
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<h2 id="strings">字符串</h2>
+
+<div class="tw">
+<table>
+<thead><tr><th>写法</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td><code>"文本"</code></td><td>双引号</td></tr>
+<tr><td><code>'文本'</code></td><td>单引号，等价</td></tr>
+<tr><td><code>"你好，{名字}！"</code></td><td><b>插值</b>：<code>{}</code> 里可以是任意表达式</td></tr>
+<tr><td><code>"价格 {数量 * 单价} 元"</code></td><td>插值里能算数</td></tr>
+<tr><td><code>"嵌套 {如果(真) {1} 否 {2}}"</code></td><td>可以嵌套任意表达式</td></tr>
+</tbody>
+</table>
+</div>
+
+<h4>转义</h4>
+<div class="tw">
+<table>
+<thead><tr><th>写</th><th>得到</th><th>写</th><th>得到</th></tr></thead>
+<tbody>
+<tr><td><code>\n</code></td><td>换行</td><td><code>\\</code></td><td>反斜杠</td></tr>
+<tr><td><code>\t</code></td><td>制表符</td><td><code>\"</code></td><td>双引号</td></tr>
+<tr><td><code>\r</code></td><td>回车</td><td><code>\{</code></td><td>字面的 <code>{</code></td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="warn">
+  字符串<b>不能跨行</b>。要换行请用 <code>\n</code>。
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<h2 id="idents">标识符</h2>
+
+<p>规则来自 Unicode 标准：首字符必须是 <code>\p{ID_Start}</code>，后续可以是 <code>\p{ID_Continue}</code>。</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>文字</th><th>例子</th><th>能用吗</th></tr></thead>
+<tbody>
+<tr><td>中文</td><td><code>名字</code> <code>我的变量</code></td><td>✅</td></tr>
+<tr><td><b>藏文</b></td><td><span class="tib">བོད་ཡིག</span> <span class="tib">བཀྲ་ཤིས</span></td><td>✅ 含音节点 ་</td></tr>
+<tr><td>日文</td><td><code>なまえ</code> <code>ナマエ</code></td><td>✅</td></tr>
+<tr><td>韩文</td><td><code>이름</code></td><td>✅</td></tr>
+<tr><td>阿拉伯文</td><td><code>اسم</code></td><td>✅</td></tr>
+<tr><td>俄文 / 希腊文</td><td><code>имя</code> <code>όνομα</code></td><td>✅</td></tr>
+<tr><td>emoji</td><td><code>🎉</code></td><td>❌</td></tr>
+<tr><td>数字开头</td><td><code>1abc</code></td><td>❌</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>藏文的特殊情况</h3>
+<p>
+  藏文用音节点 <b>tsheg</b>（<span class="tib" style="font-size:20px">་</span> U+0F0B）分隔音节，
+  比如 <span class="tib">བོད་ཡིག</span>。
+  但它在 JavaScript 里<b>不是合法标识符字符</b>，所以本语言额外放行，
+  在生成代码时替换成下划线。
+  详见 <a href="#mangling">藏文改名规则</a>。
+</p>
+
+<!-- ═══════════════════════════════════════════ -->
+<h2 id="comments">注释</h2>
+<pre class="code" data-ding># 井号到行尾
+
+let x = 42   # 行尾注释也行
+
+# 注释里写什么都可以：བོད་ཡིག 中文 emoji 🎉</pre>
+
+<!-- ═══════════════════════════════════════════ -->
+<h2 id="statements">语句</h2>
+
+<h3><code>let</code> —— 变量</h3>
+<pre class="code" data-ding>let x = 42
+let 名字 = "丁子"
+let བོད་ཡིག = "藏文"
+let 列表 = [1, 2, 3]</pre>
+<p>块级作用域，必须给初始值。</p>
+
+<h3><code>fn</code> —— 函数</h3>
+<pre class="code" data-ding># 表达式体（自动返回）
+fn 平方(n) = n * n
+
+# 块体（需要显式 return）
+fn 求和(列表) {
+  let 总 = 0
+  for x in 列表 { 总 = 总 + x }
+  return 总
+}
+
+# 匿名函数
+let 双倍 = fn(x) = x * 2</pre>
+
+<h3><code>if</code> —— 是表达式，有返回值</h3>
+<pre class="code" data-ding># 当语句用
+if 分数 >= 60 { པར("及格") }
+
+# 当表达式用（可以赋值）
+let 等级 = if 分数 >= 90 { "优" }
+           else if 分数 >= 60 { "及格" }
+           else { "不及格" }
+
+# 一行写法
+let 大 = if x > 10 { "大" } else { "小" }</pre>
+
+<h3><code>for</code> —— 范围循环 or 遍历</h3>
+<pre class="code" data-ding># 范围：含末尾
+for i in 1..=10 { པར(i) }
+
+# 范围：不含末尾
+for i in 0..10 { པར(i) }        # 0 到 9
+
+# 倒着数
+for i in 10..=1 { པར(i) }
+
+# 遍历列表
+let 水果 = ["苹果", "香蕉"]
+for f in 水果 { པར(f) }</pre>
+
+<h3><code>while</code></h3>
+<pre class="code" data-ding>let n = 10
+while n > 0 {
+  པར(n)
+  n = n - 1
+}</pre>
+
+<h3><code>return</code> / <code>break</code> / <code>continue</code></h3>
+<pre class="code" data-ding>fn 找第一个偶数(列表) {
+  for x in 列表 {
+    if x % 2 == 0 { return x }
+    if x > 100 { break }
+    continue
+  }
+  return -1
+}</pre>
+
+<!-- ═══════════════════════════════════════════ -->
+<h2 id="expressions">表达式</h2>
+
+<div class="tw">
+<table>
+<thead><tr><th>类型</th><th>写法</th><th>例子</th></tr></thead>
+<tbody>
+<tr><td>数字</td><td><code>123</code> <code>3.14</code> <span class="tib">༥</span></td><td><code>let x = ༤༢</code></td></tr>
+<tr><td>字符串</td><td><code>"..."</code></td><td><code>let s = "你好"</code></td></tr>
+<tr><td>插值字符串</td><td><code>"{表达式}"</code></td><td><code>"和是 {a + b}"</code></td></tr>
+<tr><td>布尔</td><td><code>true</code> <code>false</code></td><td></td></tr>
+<tr><td>列表</td><td><code>[a, b, c]</code></td><td><code>[1, 2, 3]</code></td></tr>
+<tr><td>范围</td><td><code>a..b</code> <code>a..=b</code></td><td><code>1..=100</code></td></tr>
+<tr><td>函数调用</td><td><code>f(a, b)</code></td><td><code>平方(5)</code></td></tr>
+<tr><td>索引</td><td><code>列表[i]</code></td><td><code>水果[0]</code>（从 0 开始）</td></tr>
+<tr><td>括号</td><td><code>(表达式)</code></td><td><code>(a + b) * c</code></td></tr>
+</tbody>
+</table>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<h2 id="operators">运算符</h2>
+<p>按优先级从低到高：</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>优先级</th><th>运算符</th><th>说明</th><th>结合性</th></tr></thead>
+<tbody>
+<tr><td>1（最低）</td><td><code>=</code></td><td>赋值</td><td>右</td></tr>
+<tr><td>2</td><td><code>||</code></td><td>逻辑或</td><td>左</td></tr>
+<tr><td>3</td><td><code>&amp;&amp;</code></td><td>逻辑与</td><td>左</td></tr>
+<tr><td>4</td><td><code>==</code> <code>!=</code></td><td>相等 / 不等</td><td>左</td></tr>
+<tr><td>5</td><td><code>&lt;</code> <code>&gt;</code> <code>&lt;=</code> <code>&gt;=</code></td><td>比较</td><td>左</td></tr>
+<tr><td>6</td><td><code>..</code> <code>..=</code></td><td>范围</td><td>—</td></tr>
+<tr><td>7</td><td><code>+</code> <code>-</code></td><td>加减</td><td>左</td></tr>
+<tr><td>8</td><td><code>*</code> <code>/</code> <code>%</code></td><td>乘除取余</td><td>左</td></tr>
+<tr><td>9</td><td><code>!</code> <code>-</code></td><td>逻辑非 / 取负（一元）</td><td>右</td></tr>
+<tr><td>10（最高）</td><td><code>()</code> <code>[]</code></td><td>调用 / 索引</td><td>左</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3><code>+</code> 是多态的 <span class="badge">重要</span></h3>
+<div class="tw">
+<table>
+<thead><tr><th>左边</th><th>右边</th><th>结果</th><th>例子</th></tr></thead>
+<tbody>
+<tr><td>数字</td><td>数字</td><td>相加</td><td><code>2 + 3</code> → <code>5</code></td></tr>
+<tr><td>字符串</td><td>任意</td><td>拼接</td><td><code>"a" + 1</code> → <code>"a1"</code></td></tr>
+<tr><td><b>列表</b></td><td><b>列表</b></td><td><b>接成新列表</b></td><td><code>[1] + [2]</code> → <code>[1, 2]</code></td></tr>
+</tbody>
+</table>
+</div>
+
+<pre class="code" data-ding>let 列表 = []
+for i in 1..=5 {
+  列表 = 列表 + [i]      # 追加元素
+}
+པར(列表)                 # [1, 2, 3, 4, 5]</pre>
+
+<!-- ═══════════════════════════════════════════ -->
+<h2 id="functions">函数</h2>
+
+<div class="tw">
+<table>
+<thead><tr><th>形式</th><th>写法</th><th>返回</th></tr></thead>
+<tbody>
+<tr><td>表达式体</td><td><code>fn f(x) = x * 2</code></td><td>自动返回表达式的值</td></tr>
+<tr><td>块体</td><td><code>fn f(x) { return x * 2 }</code></td><td>需要显式 <code>return</code></td></tr>
+<tr><td>匿名</td><td><code>fn(x) = x * 2</code></td><td>可当参数传递</td></tr>
+<tr><td>无参数</td><td><code>fn f() = 42</code></td><td></td></tr>
+<tr><td>多参数</td><td><code>fn f(a, b, c) = a + b + c</code></td><td></td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="note">
+  函数是<b>值</b>，可以赋给变量、当参数传：
+  <code>let 双倍 = 平方</code>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<h2 id="builtins">内置函数</h2>
+
+<div class="tw">
+<table>
+<thead><tr><th>函数</th><th>说明</th><th>例子</th></tr></thead>
+<tbody>
+<tr><td><code>print(...)</code></td><td>输出，多个参数用空格分隔</td><td><code>print("a", 1)</code></td></tr>
+<tr><td><code>len(x)</code></td><td>列表或字符串的长度</td><td><code>len([1,2,3])</code> → <code>3</code></td></tr>
+<tr><td><code>str(x)</code></td><td>转成字符串</td><td><code>str(42)</code> → <code>"42"</code></td></tr>
+<tr><td><code>num(x)</code></td><td>转成数字</td><td><code>num("42")</code> → <code>42</code></td></tr>
+<tr><td><code>藏文数字(n)</code></td><td>把数字转成藏文数字</td><td><code>藏文数字(2026)</code> → <span class="tib">༢༠༢༦</span></td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="tibaliases">藏文别名 <span class="badge tib">纯藏文编程</span></h3>
+<p>下面两个别名让你能写出<b>完全没有拉丁字母</b>的代码：</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>藏文别名</th><th>等价于</th><th>含义</th></tr></thead>
+<tbody>
+<tr><td class="tib" style="font-size:18px">པར(...)</td><td><code>print(...)</code></td><td class="tib">པར = 印刷 / 输出</td></tr>
+<tr><td class="tib" style="font-size:18px">བོད་ཨང(n)</td><td><code>藏文数字(n)</code></td><td class="tib">བོད་ཨང = 藏文数字</td></tr>
+</tbody>
+</table>
+</div>
+
+<pre class="code" data-ding># 完全用藏文写的程序
+let གཅིག = ༡
+let གཉིས = ༢
+
+པར("གཅིག + གཉིས = {གཅིག + གཉིས}")
+
+fn བསྡོམས(a, b) = a + b
+པར("བསྡོམས = {བསྡོམས(༡༠, ༢༠)}")
+
+པར("ལོ = {བོད་ཨང(2026)}")</pre>
+
+<!-- ═══════════════════════════════════════════ -->
+<h2 id="mangling">藏文改名规则 <span class="badge">编译原理</span></h2>
+
+<p>本语言编译到 JavaScript，而 <b>tsheg 音节点在 JS 里不合法</b>，所以必须改名：</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>DingLang</th><th>生成的 JavaScript</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td class="tib">བོད་ཡིག</td><td><code>བོད_ཡིག</code></td><td>tsheg <span class="tib">་</span> → 下划线 <code>_</code></td></tr>
+<tr><td><code>名字</code></td><td><code>名字</code></td><td>中文本来就合法，不变</td></tr>
+<tr><td class="tib">པར</td><td class="tib">པར</td><td>没有 tsheg，不变</td></tr>
+<tr><td><code>class</code></td><td><code>_class</code></td><td>避开 JS 保留字</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>冲突检测</h3>
+<p>因为改名可能撞车，编译器会检查：</p>
+<pre class="code" data-ding>let བོད་ཡིག = "第一个"
+let བོད_ཡིག = "第二个"     # ← 报错！
+
+# ✗ 第 2 行 第 1 列
+#    变量名冲突："བོད་ཡིག"（第 1 行）和 "བོད_ཡིག" 生成 JS 后会撞车
+#     原因：藏文音节点 ་ 在生成 JS 时会变成下划线，两者都会变成 "བོད_ཡིག"
+#     建议：改成不同的名字</pre>
+
+<div class="note">
+  编辑器里点「<b>生成的 JavaScript</b>」标签，能直接看到改名结果。
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<h2 id="errors">错误处理</h2>
+<p>所有错误都带<b>精确的行号和列号</b>，并指出出错位置：</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>阶段</th><th>能抓到的错误</th></tr></thead>
+<tbody>
+<tr><td><b>词法分析</b></td><td>非法字符、字符串没闭合、数字后面跟字母</td></tr>
+<tr><td><b>语法分析</b></td><td>括号不匹配、缺表达式、赋值给字面量、缺初始值</td></tr>
+<tr><td><b>语义检查</b></td><td>变量名冲突、参数重名、<code>break</code> 不在循环里、<code>return</code> 不在函数里</td></tr>
+<tr><td><b>运行时</b></td><td>调用不存在的函数、类型不对</td></tr>
+</tbody>
+</table>
+</div>
+
+<pre class="code"># 报错长这样：
+✗ 程序.ding 第 4 行 第 1 列
+    变量名冲突："བོད་ཡིག"（第 3 行）和 "བོད_ཡིག" 生成 JS 后会撞车
+     原因：藏文音节点 ་ 在生成 JS 时会变成下划线，两者都会变成 "བོད_ཡིག"
+     建议：改成不同的名字
+
+    4 │ let བོད_ཡིག = "第二个"
+      │ ^</pre>
+
+<!-- ═══════════════════════════════════════════ -->
+<h2 id="grammar">完整语法（EBNF）</h2>
+
+<pre class="code">程序      := 语句*
+语句      := let语句 | fn声明 | for语句 | while语句
+           | return语句 | break | continue | 表达式 | 代码块
+
+let语句   := 'let' 名字 '=' 表达式
+fn声明    := 'fn' 名字 '(' 参数列表 ')' ('=' 表达式 | 代码块)
+for语句   := 'for' 名字 'in' 表达式 代码块
+while语句 := 'while' 表达式 代码块
+return语句:= 'return' 表达式?
+代码块    := '{' 语句* '}'
+
+表达式    := 赋值
+赋值      := 逻辑或 ('=' 赋值)?                # 右结合
+逻辑或    := 逻辑与 ('||' 逻辑与)*
+逻辑与    := 相等 ('&amp;&amp;' 相等)*
+相等      := 比较 (('==' | '!=') 比较)*
+比较      := 范围 (('&lt;' | '&gt;' | '&lt;=' | '&gt;=') 范围)*
+范围      := 加减 (('..' | '..=') 加减)?
+加减      := 乘除 (('+' | '-') 乘除)*
+乘除      := 一元 (('*' | '/' | '%') 一元)*
+一元      := ('!' | '-') 一元 | 后缀
+后缀      := 原子 ('(' 参数列表 ')' | '[' 表达式 ']')*
+原子      := 数字 | 字符串 | 插值字符串 | 布尔
+           | 名字 | '(' 表达式 ')' | 列表 | if表达式 | 匿名函数
+
+数字      := \p{Nd}+ ('.' \p{Nd}+)?      # 任意文字的十进制数字
+字符串    := '"' 字符* '"'
+插值字符串:= '"' (字符 | '{' 表达式 '}')* '"'
+名字      := \p{ID_Start} (\p{ID_Continue} | '་')*
+列表      := '[' (表达式 (',' 表达式)*)? ','? ']'</pre>
+
+<!-- ═══════════════════════════════════════════ -->
+<h2 id="limits">已知限制（v0.1）</h2>
+
+<div class="tw">
+<table>
+<thead><tr><th>限制</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td>❌ 没有对象 / 字典</td><td>只有数字、字符串、布尔、列表</td></tr>
+<tr><td>❌ 没有模块系统</td><td>没有 <code>import</code>，单文件</td></tr>
+<tr><td>❌ 没有异常处理</td><td>没有 <code>try</code> / <code>catch</code></td></tr>
+<tr><td>❌ 没有类型标注</td><td>动态类型</td></tr>
+<tr><td>❌ 没有复合赋值</td><td>写 <code>x = x + 1</code>，不是 <code>x += 1</code></td></tr>
+<tr><td>❌ 字符串不能跨行</td><td>用 <code>\n</code></td></tr>
+<tr><td>❌ 范围只能用在 for 里</td><td><code>1..=5</code> 不能单独当列表用（可以写 <code>[1,2,3]</code>）</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="note" style="margin-top:34px">
+  <b>想让它支持什么？</b> 编译器只有约 1000 行，源码在
+  <code>src/</code> 目录，加功能不难。
+</div>
+
+</main>
+</div>
+
+<script src="highlight.js"></script>
+<script>
+(function () {
+  // ── 数字系统列表（数据由 list-digits.mjs 自动生成，保证准确）──
+  var DIGITS = [
+    ['U+0030', 'ASCII', '0123456789'],
+    ['U+0660', '阿拉伯-印度', '٠١٢٣٤٥٦٧٨٩'],
+    ['U+06F0', '扩展阿拉伯-印度', '۰۱۲۳۴۵۶۷۸۹'],
+    ['U+0966', '天城文（印地语）', '०१२३४५६७८९'],
+    ['U+09E6', '孟加拉文', '০১২৩৪৫৬৭৮৯'],
+    ['U+0A66', '古木基文', '੦੧੨੩੪੫੬੭੮੯'],
+    ['U+0AE6', '古吉拉特文', '૦૧૨૩૪૫૬૭૮૯'],
+    ['U+0B66', '奥里亚文', '୦୧୨୩୪୫୬୭୮୯'],
+    ['U+0BE6', '泰米尔文', '௦௧௨௩௪௫௬௭௮௯'],
+    ['U+0C66', '泰卢固文', '౦౧౨౩౪౫౬౭౮౯'],
+    ['U+0CE6', '卡纳达文', '೦೧೨೩೪೫೬೭೮೯'],
+    ['U+0D66', '马拉雅拉姆文', '൦൧൨൩൪൫൬൭൮൯'],
+    ['U+0E50', '泰文', '๐๑๒๓๔๕๖๗๘๙'],
+    ['U+0ED0', '老挝文', '໐໑໒໓໔໕໖໗໘໙'],
+    ['U+0F20', '★ 藏文', '༠༡༢༣༤༥༦༧༨༩'],
+    ['U+1040', '缅甸文', '၀၁၂၃၄၅၆၇၈၉'],
+    ['U+1090', '掸文', '႐႑႒႓႔႕႖႗႘႙'],
+    ['U+17E0', '高棉文', '០១២៣៤៥៦៧៨៩'],
+    ['U+1810', '蒙古文', '᠐᠑᠒᠓᠔᠕᠖᠗᠘᠙'],
+    ['U+1946', '林布文', '᥆᥇᥈᥉᥊᥋᥌᥍᥎᥏'],
+    ['U+19D0', '新傣文', '᧐᧑᧒᧓᧔᧕᧖᧗᧘᧙'],
+    ['U+1A80', '塔纳文', '᪀᪁᪂᪃᪄᪅᪆᪇᪈᪉'],
+    ['U+1A90', '塔纳文（旧）', '᪐᪑᪒᪓᪔᪕᪖᪗᪘᪙'],
+    ['U+1B50', '巴厘文', '᭐᭑᭒᭓᭔᭕᭖᭗᭘᭙'],
+    ['U+1BB0', '巽他文', '᮰᮱᮲᮳᮴᮵᮶᮷᮸᮹'],
+    ['U+1C40', '尼瓦尔文', '᱀᱁᱂᱃᱄᱅᱆᱇᱈᱉'],
+    ['U+1C50', '桑塔利文', '᱐᱑᱒᱓᱔᱕᱖᱗᱘᱙'],
+    ['U+A620', '瓦伊文', '꘠꘡꘢꘣꘤꘥꘦꘧꘨꘩'],
+    ['U+A8D0', '索拉什特拉文', '꣐꣑꣒꣓꣔꣕꣖꣗꣘꣙'],
+    ['U+A900', '克耶文', '꤀꤁꤂꤃꤄꤅꤆꤇꤈꤉'],
+    ['U+A9D0', '爪哇文', '꧐꧑꧒꧓꧔꧕꧖꧗꧘꧙'],
+    ['U+A9F0', '缅甸文（孟）', '꧰꧱꧲꧳꧴꧵꧶꧷꧸꧹'],
+    ['U+AA50', '占文', '꩐꩑꩒꩓꩔꩕꩖꩗꩘꩙'],
+    ['U+ABF0', '梅泰文', '꯰꯱꯲꯳꯴꯵꯶꯷꯸꯹'],
+    ['U+FF10', '全角（中日韩）', '０１２３４５６７８９'],
+    ['U+1FBF0', '分段数字', '🯰🯱🯲🯳🯴🯵🯶🯷🯸🯹'],
+  ];
+  var box = document.getElementById('digitlist');
+  DIGITS.forEach(function (d) {
+    var el = document.createElement('div');
+    el.className = 'digrow' + (d[1].indexOf('藏文') >= 0 ? ' star' : '');
+    el.innerHTML = '<span class="cp">' + d[0] + '</span>' +
+                   '<span class="nm">' + d[1] + '</span>' +
+                   '<span class="dg">' + d[2] + '</span>';
+    box.appendChild(el);
+  });
+
+  // ── 代码块高亮 ──
+  document.querySelectorAll('pre.code[data-ding]').forEach(function (el) {
+    var src = el.textContent;
+    el.innerHTML = window.DingHighlight.highlight(src);
+  });
+})();
+</script>
+</body>
+</html>

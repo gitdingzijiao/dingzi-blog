@@ -55,6 +55,43 @@ function isIdCont(ch) {
   return ch !== undefined && (ID_CONT.test(ch) || ch === TIBETAN_TSHEG);
 }
 
+// ── 数字：支持所有文字的十进制数字 ──
+// \p{Nd} 是 Unicode 的"十进制数字"属性，覆盖 ASCII 0-9、
+// 藏文 ༠-༩ (U+0F20-0F29)、阿拉伯-印度数字、天城文数字…… 全都能用。
+const ND = /^\p{Nd}$/u;
+
+function isDigit(ch) {
+  return ch !== undefined && ND.test(ch);
+}
+
+/**
+ * 把一个 Unicode 十进制数字字符转成它的数值。
+ * 藏文的 ༥ 返回 5，ASCII 的 '5' 也返回 5。
+ *
+ * 原理：同一种文字的 10 个数字在 Unicode 里是连续排列的，
+ * 所以往回走到这一串的起点，就是"零"的位置。
+ */
+function digitValue(ch) {
+  if (!isDigit(ch)) return -1;
+  const cp = ch.codePointAt(0);
+  if (cp >= 48 && cp <= 57) return cp - 48;   // ASCII，走快路
+  let z = cp;
+  while (z > 0 && ND.test(String.fromCodePoint(z - 1))) z--;
+  return cp - z;
+}
+
+/** 把一串各种文字的数字统一成 ASCII 数字（缺省 -1 就是非法字符） */
+function normalizeDigits(str) {
+  let out = '';
+  for (const ch of str) {
+    if (ch === '.') { out += '.'; continue; }
+    const v = digitValue(ch);
+    if (v < 0) return null;
+    out += v;
+  }
+  return out;
+}
+
 // ── 关键字（英文，避免和中文标识符混淆）──
 const KEYWORDS = new Set([
   'let', 'fn', 'if', 'else', 'for', 'in', 'while',
@@ -122,26 +159,26 @@ function tokenize(src, file = '<输入>') {
       continue;
     }
 
-    // ── 数字 ──
-    if (ch >= '0' && ch <= '9') {
+    // ── 数字（支持藏文 ༠-༩ 等各种文字的数字）──
+    if (isDigit(ch)) {
       const startLine = line, startCol = col;
       let value = '';
-      while (!atEnd() && peek() >= '0' && peek() <= '9') {
-        value += peek();
+      while (!atEnd() && isDigit(peek())) {
+        value += digitValue(peek());
         advance();
       }
       // 小数点（不能和范围运算符 .. 冲突）
-      if (peek() === '.' && peek(1) !== '.' && peek(1) >= '0' && peek(1) <= '9') {
+      if (peek() === '.' && peek(1) !== '.' && isDigit(peek(1))) {
         value += '.';
         advance();
-        while (!atEnd() && peek() >= '0' && peek() <= '9') {
-          value += peek();
+        while (!atEnd() && isDigit(peek())) {
+          value += digitValue(peek());
           advance();
         }
       }
       push('number', value, startLine, startCol);
       // 数字后面直接跟标识符字符 → 报错（let 1abc 是常见笔误）
-      if (isIdStart(peek()) || isIdCont(peek())) {
+      if (isIdStart(peek()) || (isIdCont(peek()) && !isDigit(peek()))) {
         error(`数字后面不能直接跟字符 "${peek()}"，是不是想写 "${value} ${peek()}"？`, line, col);
       }
       continue;
@@ -231,7 +268,10 @@ function tokenize(src, file = '<输入>') {
   return tokens;
 }
 
-module.exports = { tokenize, isIdStart, isIdCont, KEYWORDS, SYMBOLS, TIBETAN_TSHEG };
+module.exports = {
+  tokenize, isIdStart, isIdCont, isDigit, digitValue, normalizeDigits,
+  KEYWORDS, SYMBOLS, TIBETAN_TSHEG,
+};
 
 });
 
@@ -1058,6 +1098,23 @@ function __add(a, b) {
   if (Array.isArray(a) && Array.isArray(b)) return a.concat(b);
   return a + b;
 }
+/** 把数字用藏文数字输出：ཨང(42) → "༤༢" */
+const __TIB_DIGITS = "༠༡༢༣༤༥༦༧༨༩";
+function 藏文数字(n) {
+  var s = String(n);
+  var out = "";
+  for (var i = 0; i < s.length; i++) {
+    var c = s.charCodeAt(i) - 48;
+    out += (c >= 0 && c <= 9) ? __TIB_DIGITS[c] : s[i];
+  }
+  return out;
+}
+// 藏文别名 —— 让代码能完全用藏文写
+// ⚠️ 注意：这里是手写的 JS，必须用【改名后】的标识符！
+//    tsheg (་) 在 JS 里不合法，用户写的 བོད་ཨང 会被改成 བོད_ཨང，
+//    所以这里定义的也必须是 བོད_ཨང（踩过这个坑）。
+var བོད_ཨང = 藏文数字;   // 藏文数字（用户写 བོད་ཨང）
+var པར = print;           // པར = 印刷 / 输出
 function num(x) { const n = Number(x); if (Number.isNaN(n)) throw new Error('无法把 ' + __show(x) + ' 转成数字'); return n; }
 function __range(a, b, inclusive) {
   const out = [];
