@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DingLang 在线编辑器</title>
+<style>
+  :root {
+    --bg: #0d1117; --panel: #161b22; --panel2: #1c2128; --fg: #e6edf3;
+    --dim: #8b949e; --accent: #58a6ff; --green: #3fb950; --red: #f85149;
+    --purple: #d2a8ff; --yellow: #d29922; --border: #30363d;
+    --mono: "Cascadia Code", Consolas, "SF Mono", Menlo, monospace;
+    --tib: "Microsoft Himalaya", "Jomolhari", "Noto Sans Tibetan";
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg); color: var(--fg); overflow: hidden;
+    font-family: var(--tib), -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+    font-size: 15px;
+  }
+
+  /* ── 顶栏 ── */
+  header {
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    padding: 12px 18px; background: var(--panel);
+    border-bottom: 1px solid var(--border);
+  }
+  .logo { font-size: 19px; font-weight: 600; letter-spacing: -0.3px; }
+  .logo .ver { font-size: 11px; color: var(--accent); border: 1px solid var(--accent);
+               border-radius: 8px; padding: 1px 7px; margin-left: 6px; vertical-align: middle;
+               font-family: var(--mono); }
+  .spacer { flex: 1; }
+  select, button {
+    font-family: inherit; font-size: 14px; padding: 7px 13px; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--panel2); color: var(--fg);
+    cursor: pointer; transition: all .15s;
+  }
+  select:hover, button:hover { border-color: var(--accent); }
+  button.primary { background: #238636; border-color: #2ea043; font-weight: 600; }
+  button.primary:hover { background: #2ea043; }
+  button.primary:disabled { opacity: .5; cursor: wait; }
+  kbd { font-family: var(--mono); font-size: 11px; background: rgba(255,255,255,.1);
+        padding: 1px 5px; border-radius: 4px; margin-left: 6px; }
+
+  /* ── 主体 ── */
+  main { display: flex; height: calc(100% - 55px); }
+  .pane { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  .pane + .pane { border-left: 1px solid var(--border); }
+
+  .pane-head {
+    display: flex; align-items: center; gap: 4px; padding: 8px 12px;
+    background: var(--panel); border-bottom: 1px solid var(--border); flex-shrink: 0;
+  }
+  .tab {
+    font-size: 13px; padding: 5px 12px; border-radius: 6px; cursor: pointer;
+    color: var(--dim); border: none; background: none;
+  }
+  .tab:hover { background: var(--panel2); color: var(--fg); }
+  .tab.active { background: var(--panel2); color: var(--accent); font-weight: 600; }
+  .pane-head .right { margin-left: auto; font-size: 12px; color: var(--dim); font-family: var(--mono); }
+
+  /* ── 编辑器 ── */
+  .editor-wrap { flex: 1; display: flex; overflow: hidden; position: relative; }
+  .gutter {
+    flex-shrink: 0; padding: 14px 10px 14px 16px; text-align: right;
+    font-family: var(--mono); font-size: 13.5px; line-height: 1.65;
+    color: #484f58; background: var(--panel); user-select: none; overflow: hidden;
+    border-right: 1px solid var(--border);
+    white-space: pre;   /* 必须！否则行号的换行会被折叠成空格，全挤成一行 */
+  }
+  textarea {
+    flex: 1; padding: 14px 16px; border: none; outline: none; resize: none;
+    background: var(--bg); color: var(--fg);
+    font-family: var(--mono); font-size: 13.5px; line-height: 1.65;
+    tab-size: 2; white-space: pre; overflow: auto;
+  }
+  textarea::selection { background: rgba(88,166,255,.3); }
+
+  /* ── 输出区 ── */
+  .out {
+    flex: 1; overflow: auto; padding: 14px 18px;
+    font-family: var(--tib), var(--mono); font-size: 15px; line-height: 1.85;
+    white-space: pre-wrap; word-break: break-word;
+  }
+  .out.mono { font-family: var(--mono); font-size: 13px; line-height: 1.6; }
+  .out .ok { color: var(--green); }
+  .out .err { color: var(--red); }
+  .out .dim { color: var(--dim); }
+  .out .accent { color: var(--accent); }
+  .out .tib { color: var(--purple); }
+  .empty { color: var(--dim); font-style: italic; }
+
+  /* 错误块 */
+  .errbox { margin-bottom: 4px; }
+  .errbox .head { color: var(--red); font-weight: 600; margin-bottom: 6px; }
+  .errbox .msg { color: var(--fg); margin-bottom: 12px; font-family: var(--tib), sans-serif; font-size: 15px; }
+  .errbox .code { font-family: var(--mono); font-size: 13px; line-height: 1.7;
+                  background: var(--panel); border-radius: 8px; padding: 10px 14px;
+                  border: 1px solid var(--border); overflow-x: auto; }
+  .errbox .code .ln { color: #484f58; user-select: none; display: inline-block;
+                      width: 2.4em; text-align: right; margin-right: 12px; }
+  .errbox .code .bad { background: rgba(248,81,73,.15); border-radius: 3px; }
+  .errbox .code .caret { color: var(--red); }
+
+  /* 状态条 */
+  .status {
+    padding: 5px 14px; font-size: 12px; font-family: var(--mono); color: var(--dim);
+    border-top: 1px solid var(--border); background: var(--panel); flex-shrink: 0;
+    display: flex; gap: 14px;
+  }
+  .status .live { color: var(--green); }
+
+  /* 移动端 */
+  @media (max-width: 760px) {
+    main { flex-direction: column; height: calc(100% - 55px); }
+    .pane { flex: none; height: 50%; }
+    .pane + .pane { border-left: none; border-top: 1px solid var(--border); }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">DingLang<span class="ver">v0.1</span></div>
+  <select id="examples" title="选择示例"></select>
+  <div class="spacer"></div>
+  <button id="clear">清空</button>
+  <button id="run" class="primary">▶ 运行<kbd>Ctrl</kbd><kbd>↵</kbd></button>
+</header>
+
+<main>
+  <!-- 左：代码 -->
+  <div class="pane">
+    <div class="pane-head">
+      <button class="tab active">源码</button>
+      <span class="right" id="srcinfo"></span>
+    </div>
+    <div class="editor-wrap">
+      <div class="gutter" id="gutter">1</div>
+      <textarea id="code" spellcheck="false" autocapitalize="off" autocomplete="off"
+                autocorrect="off"></textarea>
+    </div>
+  </div>
+
+  <!-- 右：输出 -->
+  <div class="pane">
+    <div class="pane-head">
+      <button class="tab active" data-tab="out">输出</button>
+      <button class="tab" data-tab="js">生成的 JavaScript</button>
+      <button class="tab" data-tab="ast">语法树</button>
+      <span class="right" id="outinfo"></span>
+    </div>
+    <div class="out" id="out"></div>
+    <div class="status">
+      <span id="st-status">就绪</span>
+      <span id="st-time"></span>
+      <span id="st-lines"></span>
+    </div>
+  </div>
+</main>
+
+<script src="compiler.js"></script>
+<script src="examples.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  var $ = function (id) { return document.getElementById(id); };
+  var codeEl = $('code'), gutter = $('gutter'), outEl = $('out');
+  var exSel = $('examples'), runBtn = $('run');
+  var curTab = 'out';
+  var lastResult = null;   // { output, code, ast }
+  var worker = null, seq = 0, running = false, timer = null;
+
+  var TIMEOUT_MS = 4000;
+
+  // ── Worker 管理（超时就整个干掉重建，防止死循环卡住页面）──
+  function newWorker() {
+    var w = new Worker('runner.js');
+    w.onmessage = onWorkerMessage;
+    w.onerror = function (e) {
+      finish(false, '执行器出错: ' + (e.message || '未知错误'));
+    };
+    return w;
+  }
+  function killWorker() {
+    if (worker) { worker.terminate(); worker = null; }
+    if (timer) { clearTimeout(timer); timer = null; }
+  }
+
+  function onWorkerMessage(e) {
+    var d = e.data;
+    if (d.id !== seq) return;   // 过期的结果，丢弃
+    killWorker();
+
+    if (d.ok) {
+      lastResult = { output: d.output, code: d.code };
+      finish(true, null, d.output, d.code);
+    } else if (d.phase === 'compile') {
+      lastResult = { output: [], code: null };
+      finish(false, null, null, null, d.error);
+    } else {
+      lastResult = { output: d.output, code: d.code };
+      finish(false, null, d.output, d.code, d.error);
+    }
+  }
+
+  // ── 运行 ──
+  function run() {
+    if (running) return;
+    var src = codeEl.value;
+    if (!src.trim()) { renderEmpty('（代码是空的）'); return; }
+
+    killWorker();
+    worker = newWorker();
+    running = true;
+    seq++;
+    runBtn.disabled = true;
+    $('st-status').textContent = '运行中…';
+    $('st-time').textContent = '';
+    var t0 = performance.now();
+
+    worker.postMessage({ id: seq, src: src });
+
+    timer = setTimeout(function () {
+      var w = worker;
+      killWorker();
+      if (w) w.terminate();
+      running = false;
+      runBtn.disabled = false;
+      lastResult = null;
+      var sec = (TIMEOUT_MS / 1000).toFixed(0);
+      outEl.innerHTML =
+        '<div class="errbox">' +
+        '<div class="head">✗ 执行超时</div>' +
+        '<div class="msg">程序跑了超过 ' + sec + ' 秒还没结束，已经强制中止。' +
+        '最常见的原因是死循环，比如 <code>while true { }</code> 或者循环变量没有变化。</div>' +
+        '</div>';
+      $('st-status').textContent = '已中止（超时）';
+      $('st-time').textContent = sec + 's';
+      curTab = 'out'; syncTabs();
+    }, TIMEOUT_MS);
+
+    function done() {
+      running = false;
+      runBtn.disabled = false;
+      $('st-time').textContent = (performance.now() - t0).toFixed(0) + ' ms';
+    }
+    run._done = done;
+  }
+
+  function finish(ok, msg, output, code, err) {
+    if (run._done) run._done();
+    lastResult = { output: output || [], code: code || null };
+    if (ok) {
+      $('st-status').innerHTML = '<span class="live">✓ 运行成功</span>';
+      renderOutput(output || []);
+    } else if (err) {
+      $('st-status').textContent = err.line ? '✗ 第 ' + err.line + ' 行出错' : '✗ 运行出错';
+      renderError(err, code);
+    } else {
+      $('st-status').textContent = '✗ ' + (msg || '出错');
+      outEl.innerHTML = '<div class="errbox"><div class="head">✗</div><div class="msg">' + esc(msg) + '</div></div>';
+    }
+    if (curTab !== 'out') syncTabs();
+  }
+
+  // ── 渲染 ──
+  function esc(s) {
+    return String(s).replace(/[&<>]/g, function (m) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m];
+    });
+  }
+
+  function renderEmpty(t) {
+    outEl.className = 'out';
+    outEl.innerHTML = '<div class="empty">' + esc(t) + '</div>';
+  }
+
+  function renderOutput(lines) {
+    outEl.className = 'out';
+    if (!lines.length) { renderEmpty('（程序没有输出）'); return; }
+    outEl.innerHTML = lines.map(function (l) { return esc(l); }).join('\n');
+  }
+
+  function renderError(err, code) {
+    outEl.className = 'out';
+    var h = '<div class="errbox">';
+    h += '<div class="head">✗ ' +
+         (err.line ? '第 ' + err.line + ' 行' + (err.col ? ' 第 ' + err.col + ' 列' : '') : '运行出错') +
+         '</div>';
+    h += '<div class="msg">' + esc(err.message) + '</div>';
+    if (err.line && code !== null && code !== undefined) {
+      // 用生成的 JS 展示出错位置
+      var lines = String(code).split('\n');
+      var start = Math.max(0, err.line - 3);
+      var end = Math.min(lines.length, err.line + 2);
+      h += '<div class="code">';
+      for (var i = start; i < end; i++) {
+        var isBad = (i + 1) === err.line;
+        var num = String(i + 1);
+        h += '<div' + (isBad ? ' class="bad"' : '') + '>' +
+             '<span class="ln">' + num + '</span>' + esc(lines[i]) + '</div>';
+      }
+      h += '</div>';
+    }
+    // 编译错误时，用源码展示（更直观）
+    if (err.line && curTab === 'out') {
+      var srcLines = codeEl.value.split('\n');
+      var sl = srcLines[err.line - 1];
+      if (sl !== undefined) {
+        h += '<div class="code" style="margin-top:10px">' +
+             '<div><span class="ln">' + err.line + '</span>' + esc(sl) + '</div>' +
+             '<div><span class="ln"></span>' +
+             '<span class="caret">' + ' '.repeat(Math.max(0, (err.col || 1) - 1)) + '^</span></div>' +
+             '</div>';
+      }
+    }
+    h += '</div>';
+    outEl.innerHTML = h;
+  }
+
+  // ── Tab 切换 ──
+  function syncTabs() {
+    var tabs = document.querySelectorAll('.tab[data-tab]');
+    for (var i = 0; i < tabs.length; i++) {
+      tabs[i].classList.toggle('active', tabs[i].dataset.tab === curTab);
+    }
+    if (curTab === 'out') {
+      outEl.className = 'out';
+      // 重新渲染上次结果
+      if (lastResult) renderOutput(lastResult.output);
+      return;
+    }
+    outEl.className = 'out mono';
+    var src = codeEl.value;
+    try {
+      if (curTab === 'js') {
+        var r = DingLang.compile(src, '<编辑器>');
+        outEl.textContent = r.code;
+        $('outinfo').textContent = r.code.split('\n').length + ' 行';
+      } else {
+        var ast = DingLang.parse(src, '<编辑器>');
+        outEl.textContent = JSON.stringify(ast, null, 2);
+        $('outinfo').textContent = '原生 AST';
+      }
+    } catch (e) {
+      outEl.className = 'out';
+      var d = e.dingError;
+      renderError({ message: e.message, line: d && d.line, col: d && d.col }, null);
+    }
+  }
+
+  document.querySelectorAll('.tab[data-tab]').forEach(function (b) {
+    b.addEventListener('click', function () { curTab = b.dataset.tab; syncTabs(); });
+  });
+
+  // ── 行号 ──
+  function updateGutter() {
+    var n = codeEl.value.split('\n').length;
+    var s = '';
+    for (var i = 1; i <= n; i++) s += i + '\n';
+    gutter.textContent = s;
+    $('srcinfo').textContent = n + ' 行 · ' + codeEl.value.length + ' 字符';
+  }
+  codeEl.addEventListener('input', updateGutter);
+  codeEl.addEventListener('scroll', function () {
+    gutter.scrollTop = codeEl.scrollTop;
+  });
+
+  // Tab 键插入两个空格
+  codeEl.addEventListener('keydown', function (e) {
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      var s = codeEl.selectionStart, en = codeEl.selectionEnd;
+      codeEl.value = codeEl.value.slice(0, s) + '  ' + codeEl.value.slice(en);
+      codeEl.selectionStart = codeEl.selectionEnd = s + 2;
+      updateGutter();
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); run(); }
+  });
+
+  // ── 示例下拉 ──
+  var exs = window.DING_EXAMPLES || [];
+  exs.forEach(function (ex, i) {
+    var o = document.createElement('option');
+    o.value = ex.id;
+    o.textContent = ex.name + ' —— ' + ex.desc;
+    exSel.appendChild(o);
+  });
+  exSel.addEventListener('change', function () {
+    var ex = exs.filter(function (x) { return x.id === exSel.value; })[0];
+    if (ex) {
+      codeEl.value = ex.code;
+      updateGutter();
+      run();
+    }
+  });
+
+  $('run').addEventListener('click', run);
+  $('clear').addEventListener('click', function () {
+    codeEl.value = '';
+    updateGutter();
+    renderEmpty('（代码是空的）');
+    $('st-status').textContent = '就绪';
+    $('st-time').textContent = '';
+    codeEl.focus();
+  });
+
+  // ── 初始化 ──
+  if (exs.length) {
+    codeEl.value = exs[0].code;
+    exSel.value = exs[0].id;
+  }
+  updateGutter();
+  renderEmpty('点右上角「运行」或按 Ctrl+Enter 执行代码');
+  setTimeout(run, 250);
+})();
+</script>
+</body>
+</html>

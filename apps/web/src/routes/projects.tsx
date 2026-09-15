@@ -78,6 +78,13 @@ function getProjects(locale: ReturnType<typeof getCurrentLocale>): readonly Proj
         status: "live",
       },
       {
+        name: "DingLang 编程语言（在线编译器）",
+        description: "自己设计并实现的一门小语言，编译到 JavaScript。支持 Unicode 标识符 —— 变量名、函数名可以直接写中文和藏文（含藏文音节点 ་），这是它最特别的地方。完整实现词法分析、语法分析、语义检查、代码生成四个阶段，约 1000 行。报错带精确行列号；网页版在 Web Worker 里执行，写死循环不会卡死页面。",
+        tags: ["编译器", "编程语言", "Unicode", "藏文"],
+        href: "/dinglang/",
+        status: "live",
+      },
+      {
         name: "小人地图行走（DingGame）",
         description: "用 Godot 开发的 2D 行走小游戏：无限生成地图、金币收集、相机跟随。支持 Windows / Android。",
         tags: ["Godot", "GDScript", "游戏"],
@@ -120,6 +127,13 @@ function getProjects(locale: ReturnType<typeof getCurrentLocale>): readonly Proj
       description: "All 30 consonants and 4 vowels are real human recordings (Amdo Tibetan) — click any letter to hear it. Three pages: the alphabet with a listening quiz, recording override and hide-the-transliteration self-test; a per-letter word page with real word audio and Chinese glosses; and a typing trainer whose on-screen keyboard matches the Microsoft Tibetan IME layout (green when correct, red when wrong).",
       tags: ["HTML5", "Web Audio", "Tibetan", "Learning"],
       href: "/tibetan/",
+      status: "live",
+    },
+    {
+      name: "DingLang — A Programming Language With a Compiler",
+      description: "A small language I designed and implemented, compiling to JavaScript. It accepts Unicode identifiers, so variable and function names can be written in Chinese and Tibetan — Tibetan tsheg (་) included — which is what makes it unusual. Four stages implemented from scratch in about 1,000 lines: lexer, parser, semantic checker, code generator. Errors carry exact line and column; the web editor runs code in a Web Worker so an infinite loop can't freeze the page.",
+      tags: ["Compiler", "Language Design", "Unicode", "Tibetan"],
+      href: "/dinglang/",
       status: "live",
     },
     {
