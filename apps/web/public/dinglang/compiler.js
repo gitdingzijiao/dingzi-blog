@@ -653,75 +653,147 @@ __define("./checker", function (module, exports, require) {
 /**
  * DingLang 语义检查器（Checker）
  * ------------------------------------------------------------
- * 语法对了不代表程序是对的。这一步抓的是「语法没错但逻辑有问题」的情况：
+ * 语法对了不代表程序是对的。这一步抓「语法没错但逻辑有问题」的情况：
  *
  *   1. 改名冲突 —— 两个变量名只差 tsheg/下划线，生成 JS 后会撞车
  *   2. 参数重名 —— fn f(a, a)
  *   3. break/continue 不在循环里
  *   4. return 不在函数里
+ *   5. ★ 变量没定义 —— 编译期就报错，并提示「是不是想写 xxx」
+ *
+ * 第 5 条是后加的。之前没做，导致 `print(n + J)`（J 打成了大写）
+ * 一路编译到 JS，运行时才报 `J is not defined` ——
+ * 既不说哪一行，名字还是编译后的，完全没法定位。
  */
 
-const { mangle } = require('./codegen');
+const { mangle, PRELUDE } = require('./codegen');
 
 const TSHEG = '\u0F0B';
 
-/** 收集 AST 里所有出现过的名字（变量、参数、函数名） */
-function collectNames(ast) {
-  const names = new Map(); // 名字 → 首次出现的位置
+/** 从运行时前导代码里把所有内置名字抓出来 */
+function collectBuiltins() {
+  const set = new Set();
+  for (const m of PRELUDE.matchAll(/^function\s+([^\s(]+)/gm)) set.add(m[1]);
+  for (const m of PRELUDE.matchAll(/^var\s+([^\s=;]+)/gm)) set.add(m[1]);
+  return set;
+}
+const BUILTINS = collectBuiltins();
 
-  const visitExpr = (n) => {
+/** 收集 AST 里出现过的所有名字 */
+function collectNames(ast) {
+  const names = new Map();
+
+  const visit = (n) => {
     if (!n || typeof n !== 'object') return;
     switch (n.type) {
       case 'LetStmt':
         if (!names.has(n.name)) names.set(n.name, { line: n.line, col: n.col });
-        visitExpr(n.value);
+        visit(n.value);
         break;
       case 'FnDecl':
         if (!names.has(n.name)) names.set(n.name, { line: n.line, col: n.col });
         n.params.forEach((p) => { if (!names.has(p)) names.set(p, { line: n.line, col: n.col }); });
-        visitExpr(n.body);
+        visit(n.body);
         break;
       case 'FnExpr':
         n.params.forEach((p) => { if (!names.has(p)) names.set(p, { line: n.line, col: n.col }); });
-        visitExpr(n.body);
+        visit(n.body);
         break;
       case 'Name':
         if (!names.has(n.name)) names.set(n.name, { line: n.line, col: n.col });
         break;
       case 'Assign':
         if (n.target.type === 'Name' && !names.has(n.target.name)) names.set(n.target.name, { line: n.line, col: n.col });
-        visitExpr(n.value);
+        visit(n.value);
         break;
       case 'Block':
       case 'Program':
-        n.body.forEach(visitExpr);
+        n.body.forEach(visit);
         break;
       case 'IfExpr':
-        visitExpr(n.cond); visitExpr(n.then); if (n.else) visitExpr(n.else);
+        visit(n.cond); visit(n.then); if (n.else) visit(n.else);
         break;
       case 'ForStmt':
         if (!names.has(n.varName)) names.set(n.varName, { line: n.line, col: n.col });
-        visitExpr(n.iterable); visitExpr(n.body);
+        visit(n.iterable); visit(n.body);
         break;
       case 'WhileStmt':
-        visitExpr(n.cond); visitExpr(n.body);
+        visit(n.cond); visit(n.body);
         break;
-      case 'Binary':
-      case 'Range':
-        visitExpr(n.left || n.start); visitExpr(n.right || n.end);
-        break;
-      case 'Unary': visitExpr(n.operand); break;
-      case 'Call': visitExpr(n.callee); n.args.forEach(visitExpr); break;
-      case 'Index': visitExpr(n.object); visitExpr(n.index); break;
-      case 'ListLit': n.items.forEach(visitExpr); break;
-      case 'InterpString': n.parts.forEach((p) => p.kind === 'expr' && visitExpr(p.expr)); break;
-      case 'ReturnStmt': if (n.value) visitExpr(n.value); break;
+      case 'Binary': visit(n.left); visit(n.right); break;
+      case 'Range': visit(n.start); visit(n.end); break;
+      case 'Unary': visit(n.operand); break;
+      case 'Call': visit(n.callee); n.args.forEach(visit); break;
+      case 'Index': visit(n.object); visit(n.index); break;
+      case 'ListLit': n.items.forEach(visit); break;
+      case 'InterpString': n.parts.forEach((p) => p.kind === 'expr' && visit(p.expr)); break;
+      case 'ReturnStmt': if (n.value) visit(n.value); break;
       default: break;
     }
   };
-
-  visitExpr(ast);
+  visit(ast);
   return names;
+}
+
+/**
+ * 收集一个作用域里的所有声明（含嵌套代码块里的）。
+ * 故意做得宽松：先用后声明不算错，避免误报。
+ */
+function collectDecls(node, out) {
+  if (!node || typeof node !== 'object') return;
+  switch (node.type) {
+    case 'Program':
+    case 'Block':
+      node.body.forEach((s) => collectDecls(s, out));
+      break;
+    case 'LetStmt':
+      out.add(mangle(node.name));
+      collectDecls(node.value, out);
+      break;
+    case 'FnDecl':
+      out.add(mangle(node.name));
+      break;                       // 函数体是独立作用域，这里只收函数名
+    case 'FnExpr':
+      break;                       // 匿名函数体独立
+    case 'ForStmt':
+      out.add(mangle(node.varName));
+      collectDecls(node.iterable, out);
+      collectDecls(node.body, out);
+      break;
+    case 'WhileStmt':
+      collectDecls(node.cond, out); collectDecls(node.body, out);
+      break;
+    case 'IfExpr':
+      collectDecls(node.cond, out); collectDecls(node.then, out);
+      if (node.else) collectDecls(node.else, out);
+      break;
+    default:
+      break;
+  }
+}
+
+// ── 拼写提示 ──
+function editDistance1(a, b) {
+  if (a === b) return false;
+  const la = a.length, lb = b.length;
+  if (Math.abs(la - lb) > 1) return false;
+  let i = 0, j = 0, diff = 0;
+  while (i < la && j < lb) {
+    if (a[i] === b[j]) { i++; j++; continue; }
+    if (++diff > 1) return false;
+    if (la > lb) i++;
+    else if (lb > la) j++;
+    else { i++; j++; }
+  }
+  return diff + (la - i) + (lb - j) <= 1;
+}
+
+function suggest(name, candidates) {
+  const lower = name.toLowerCase();
+  // 优先提示「只差大小写」的 —— 这是最常见的错
+  for (const c of candidates) if (c.toLowerCase() === lower && c !== name) return c;
+  for (const c of candidates) if (editDistance1(name, c)) return c;
+  return null;
 }
 
 function check(ast, file = '<输入>') {
@@ -749,50 +821,131 @@ function check(ast, file = '<输入>') {
     }
   }
 
-  // ── 2. 参数重名 / 3. 控制流位置 ──
+  // ── 2~5. 作用域 + 控制流 + 未定义变量 ──
+  const scopeStack = [new Set()];
   let loopDepth = 0;
   let fnDepth = 0;
+
+  const atTop = () => scopeStack[scopeStack.length - 1];
+  const isDeclared = (m) => scopeStack.some((s) => s.has(m));
+  const declare = (name) => atTop().add(mangle(name));
+
+  const checkRef = (name, line, col) => {
+    const m = mangle(name);
+    if (isDeclared(m) || BUILTINS.has(m)) return;
+    const known = [];
+    scopeStack.forEach((s) => s.forEach((x) => known.push(x)));
+    BUILTINS.forEach((x) => known.push(x));
+    const hint = suggest(m, known);
+    add(errors,
+      `变量 "${name}" 没有定义` +
+      (hint ? `\n     是不是想写 "${hint}"？（DingLang 区分大小写）` : '') +
+      `\n     变量要先声明：let ${name} = ...`,
+      line, col);
+  };
 
   const walk = (n) => {
     if (!n || typeof n !== 'object') return;
     switch (n.type) {
-      case 'FnDecl':
+      case 'Program':
+        collectDecls(n, atTop());
+        n.body.forEach(walk);
+        break;
+
+      case 'Block': {
+        scopeStack.push(new Set());
+        collectDecls(n, atTop());
+        n.body.forEach(walk);
+        scopeStack.pop();
+        break;
+      }
+
+      case 'LetStmt':
+        walk(n.value);          // 先算右边（let x = x + 1 里的 x 还没定义）
+        declare(n.name);
+        break;
+
+      case 'FnDecl': {
+        declare(n.name);
+        const seen = new Set();
+        for (const p of n.params) {
+          if (seen.has(p)) add(errors, `参数重名：函数里有多个名为 "${p}" 的参数`, n.line, n.col);
+          seen.add(p);
+        }
+        scopeStack.push(new Set());
+        n.params.forEach((p) => declare(p));
+        fnDepth++;
+        walk(n.body);
+        fnDepth--;
+        scopeStack.pop();
+        break;
+      }
+
       case 'FnExpr': {
         const seen = new Set();
         for (const p of n.params) {
           if (seen.has(p)) add(errors, `参数重名：函数里有多个名为 "${p}" 的参数`, n.line, n.col);
           seen.add(p);
         }
+        scopeStack.push(new Set());
+        n.params.forEach((p) => declare(p));
         fnDepth++;
         walk(n.body);
         fnDepth--;
+        scopeStack.pop();
         break;
       }
+
       case 'ForStmt':
-        loopDepth++; walk(n.iterable); walk(n.body); loopDepth--;
+        walk(n.iterable);
+        scopeStack.push(new Set());
+        declare(n.varName);
+        loopDepth++;
+        walk(n.body);
+        loopDepth--;
+        scopeStack.pop();
         break;
+
       case 'WhileStmt':
-        loopDepth++; walk(n.cond); walk(n.body); loopDepth--;
+        walk(n.cond);
+        loopDepth++;
+        walk(n.body);
+        loopDepth--;
         break;
+
       case 'BreakStmt':
         if (loopDepth === 0) add(errors, 'break 只能用在循环里', n.line, n.col);
         break;
+
       case 'ContinueStmt':
         if (loopDepth === 0) add(errors, 'continue 只能用在循环里', n.line, n.col);
         break;
+
       case 'ReturnStmt':
         if (fnDepth === 0) add(errors, 'return 只能用在函数里', n.line, n.col);
         if (n.value) walk(n.value);
         break;
-      case 'Block':
-      case 'Program':
-        n.body.forEach(walk);
+
+      case 'Name':
+        checkRef(n.name, n.line, n.col);
         break;
+
+      // ⚠️ 这个不能漏！表达式语句（比如 print(x)）本身是个 ExprStmt，
+      //    漏掉的话里面所有变量引用都不会被检查 —— 这个 bug 踩过一次。
+      case 'ExprStmt':
+        walk(n.expr);
+        break;
+
+      case 'Assign':
+        if (n.target.type === 'Name') checkRef(n.target.name, n.line, n.col);
+        else walk(n.target);
+        walk(n.value);
+        break;
+
       case 'IfExpr':
         walk(n.cond); walk(n.then); if (n.else) walk(n.else);
         break;
-      case 'LetStmt': walk(n.value); break;
-      case 'Assign': walk(n.target); walk(n.value); break;
+
       case 'Binary': walk(n.left); walk(n.right); break;
       case 'Range': walk(n.start); walk(n.end); break;
       case 'Unary': walk(n.operand); break;
@@ -800,6 +953,7 @@ function check(ast, file = '<输入>') {
       case 'Index': walk(n.object); walk(n.index); break;
       case 'ListLit': n.items.forEach(walk); break;
       case 'InterpString': n.parts.forEach((p) => p.kind === 'expr' && walk(p.expr)); break;
+
       default: break;
     }
   };
