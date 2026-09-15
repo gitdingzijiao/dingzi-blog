@@ -89,6 +89,13 @@
   .sb-item .sz { margin-left: auto; font-size: 11.5px; color: #484f58; font-family: var(--codefont); }
   .sb-item.dir { color: var(--dim); }
   .sb-empty { padding: 14px 12px; font-size: 13px; color: #484f58; }
+  /* 换目录的输入框 */
+  .sb-edit { padding: 6px 10px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  .sb-edit input {
+    width: 100%; font-family: var(--codefont); font-size: 11.5px;
+    padding: 5px 8px; border-radius: 4px; border: 1px solid var(--accent);
+    background: var(--bg); color: var(--fg); outline: none;
+  }
   .sb-foot { padding: 7px 10px; border-top: 1px solid var(--border); flex-shrink: 0; display: flex; gap: 6px; }
   .sb-foot button { flex: 1; padding: 6px 0; font-size: var(--fs-side); }
   .dirty { color: var(--yellow); font-size: 12px; margin-left: 5px; }
@@ -398,7 +405,10 @@
       <button id="sb-up" title="上一级">↑</button>
       <button id="sb-refresh" title="刷新">⟳</button>
     </div>
-    <div class="sb-path" id="sb-path">—</div>
+    <div class="sb-path" id="sb-path" title="点这里可以换目录（粘贴一个完整路径）">—</div>
+    <div class="sb-edit" id="sb-edit" style="display:none">
+      <input id="sb-input" placeholder="粘贴一个完整路径，回车切换">
+    </div>
     <div class="sb-list" id="sb-list"></div>
     <div class="sb-foot">
       <button id="sb-new" title="在当前目录新建 .ding 文件">新建</button>
@@ -858,6 +868,51 @@
   });
 
   $('sb-refresh').onclick = function () { loadDir(FS.rel); };
+
+  // ── 换工作目录：点路径那一行就变成输入框 ──
+  //    （浏览器里拿不到系统文件对话框的路径，所以让用户自己粘贴）
+  var sbPath = $('sb-path'), sbEdit = $('sb-edit'), sbInput = $('sb-input');
+
+  function openPathEditor() {
+    if (!FS.active) return;
+    sbInput.value = FS.cwd || '';
+    sbPath.style.display = 'none';
+    sbEdit.style.display = '';
+    sbInput.focus();
+    sbInput.select();
+  }
+  function closePathEditor() {
+    sbEdit.style.display = 'none';
+    sbPath.style.display = '';
+  }
+  function applyPathEditor() {
+    var p = sbInput.value.trim();
+    if (!p) return closePathEditor();
+    api('/cwd', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: p }),
+    }).then(function (d) {
+      FS.cwd = d.cwd;
+      FS.file = null;
+      closePathEditor();
+      loadDir('.');
+      $('st-status').textContent = '工作目录已切到 ' + d.cwd;
+    }).catch(function (e) {
+      alert('切换失败：' + e.message + '\n\n请检查路径是否存在。');
+      sbInput.focus();
+    });
+  }
+
+  sbPath.onclick = openPathEditor;
+  sbInput.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') { e.preventDefault(); applyPathEditor(); }
+    else if (e.key === 'Escape') { e.preventDefault(); closePathEditor(); }
+  });
+  sbInput.addEventListener('blur', function () {
+    // 失焦时如果没在提交就关掉（延迟一点，免得抢在 Enter 之前）
+    setTimeout(function () { if (sbEdit.style.display !== 'none') closePathEditor(); }, 150);
+  });
   $('sb-up').onclick = function () {
     if (FS.rel === '.' || FS.rel === '') return;
     var parts = FS.rel.split('/');
