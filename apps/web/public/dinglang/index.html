@@ -13,31 +13,40 @@
     --codefont: "Cascadia Code", Consolas, "SF Mono", Menlo,
                 "Microsoft Himalaya", "Noto Sans Tibetan", monospace;
     --tib: "Microsoft Himalaya", "Jomolhari", "Noto Sans Tibetan";
-    --fs: 13.5px;
-    --lh: 1.65;
-    --pad-y: 14px;
+    /* 字号统一在这里调 */
+    --fs-code: 15px;      /* 编辑器里的代码 */
+    --lh-code: 1.7;
+    --fs-ui: 15px;        /* 按钮、下拉 */
+    --fs-tab: 14.5px;     /* 标签页 */
+    --fs-out: 16px;       /* 输出区 */
+    --fs-side: 14.5px;    /* 文件列表 */
+    --pad-y: 15px;
     --pad-x: 16px;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { height: 100%; }
   body {
+    /* ★ 用 flex 竖排，取代 calc(100% - 55px) 那种魔法数字。
+       之前 header 从 55px 变成 63px，那个减法没跟着改，底部状态栏就被切掉了。 */
+    display: flex; flex-direction: column;
     background: var(--bg); color: var(--fg); overflow: hidden;
     font-family: var(--tib), -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
-    font-size: 15px;
+    font-size: var(--fs-ui);
   }
 
   /* ── 顶栏 ── */
   header {
     display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
-    padding: 12px 18px; background: var(--panel); border-bottom: 1px solid var(--border);
+    padding: 13px 20px; background: var(--panel); border-bottom: 1px solid var(--border);
+    flex: 0 0 auto;
   }
-  .logo { font-size: 19px; font-weight: 600; letter-spacing: -0.3px; }
-  .logo .ver { font-size: 11px; color: var(--accent); border: 1px solid var(--accent);
-               border-radius: 8px; padding: 1px 7px; margin-left: 6px; vertical-align: middle;
+  .logo { font-size: 21px; font-weight: 600; letter-spacing: -0.3px; }
+  .logo .ver { font-size: 12px; color: var(--accent); border: 1px solid var(--accent);
+               border-radius: 8px; padding: 1px 8px; margin-left: 7px; vertical-align: middle;
                font-family: var(--codefont); }
   .spacer { flex: 1; }
   select, button, .reflink {
-    font-family: inherit; font-size: 14px; padding: 7px 13px; border-radius: 8px;
+    font-family: inherit; font-size: var(--fs-ui); padding: 8px 15px; border-radius: 8px;
     border: 1px solid var(--border); background: var(--panel2); color: var(--fg);
     cursor: pointer; transition: all .15s;
   }
@@ -46,29 +55,64 @@
   button.primary { background: #238636; border-color: #2ea043; font-weight: 600; }
   button.primary:hover { background: #2ea043; }
   button.primary:disabled { opacity: .5; cursor: wait; }
-  kbd { font-family: var(--codefont); font-size: 11px; background: rgba(255,255,255,.1);
-        padding: 1px 5px; border-radius: 4px; margin-left: 6px; }
+  kbd { font-family: var(--codefont); font-size: 12px; background: rgba(255,255,255,.1);
+        padding: 1px 6px; border-radius: 4px; margin-left: 6px; }
 
-  /* ── 主体 ── */
-  main { display: flex; height: calc(100% - 55px); }
-  .pane { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  /* ── 桌面版：文件浏览器侧栏 ── */
+  #sidebar {
+    display: none; width: 218px; flex-shrink: 0; flex-direction: column;
+    background: var(--panel); border-right: 1px solid var(--border);
+  }
+  body.desktop #sidebar { display: flex; }
+  .sb-head {
+    display: flex; align-items: center; gap: 6px; padding: 8px 10px;
+    border-bottom: 1px solid var(--border); flex-shrink: 0;
+  }
+  .sb-head .ttl { font-size: 13px; color: var(--dim); flex: 1;
+                  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+                  font-family: var(--codefont); }
+  .sb-head button { padding: 4px 10px; font-size: 13px; }
+  .sb-path {
+    padding: 6px 12px; font-size: 12.5px; color: #484f58; font-family: var(--codefont);
+    border-bottom: 1px solid var(--border); flex-shrink: 0;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; direction: rtl; text-align: left;
+  }
+  .sb-list { flex: 1; overflow-y: auto; padding: 4px 0; }
+  .sb-item {
+    display: flex; align-items: center; gap: 7px; padding: 4px 10px 4px 12px;
+    font-size: var(--fs-side); cursor: pointer; color: var(--fg);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .sb-item:hover { background: var(--panel2); }
+  .sb-item.active { background: rgba(88,166,255,.14); color: var(--accent); }
+  .sb-item .ico { flex-shrink: 0; font-size: 14px; opacity: .85; }
+  .sb-item .sz { margin-left: auto; font-size: 11.5px; color: #484f58; font-family: var(--codefont); }
+  .sb-item.dir { color: var(--dim); }
+  .sb-empty { padding: 14px 12px; font-size: 13px; color: #484f58; }
+  .sb-foot { padding: 7px 10px; border-top: 1px solid var(--border); flex-shrink: 0; display: flex; gap: 6px; }
+  .sb-foot button { flex: 1; padding: 6px 0; font-size: var(--fs-side); }
+  .dirty { color: var(--yellow); font-size: 12px; margin-left: 5px; }
+
+  /* ── 主体：flex 撑满剩余高度，没有魔法数字 ── */
+  main { display: flex; flex: 1 1 auto; min-height: 0; }
+  .pane { flex: 1; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
   .pane + .pane { border-left: 1px solid var(--border); }
 
   .pane-head {
-    display: flex; align-items: center; gap: 4px; padding: 8px 12px;
+    display: flex; align-items: center; gap: 4px; padding: 8px 14px;
     background: var(--panel); border-bottom: 1px solid var(--border); flex-shrink: 0;
   }
-  .tab { font-size: 13px; padding: 5px 12px; border-radius: 6px; cursor: pointer;
+  .tab { font-size: var(--fs-tab); padding: 6px 14px; border-radius: 6px; cursor: pointer;
          color: var(--dim); border: none; background: none; font-family: inherit; }
   .tab:hover { background: var(--panel2); color: var(--fg); }
   .tab.active { background: var(--panel2); color: var(--accent); font-weight: 600; }
-  .pane-head .right { margin-left: auto; font-size: 12px; color: var(--dim); font-family: var(--codefont); }
+  .pane-head .right { margin-left: auto; font-size: 13px; color: var(--dim); font-family: var(--codefont); }
 
   /* ── 编辑器：textarea 叠在高亮层上面 ── */
   .editor-wrap { flex: 1; display: flex; overflow: hidden; position: relative; }
   .gutter {
     flex-shrink: 0; padding: var(--pad-y) 10px var(--pad-y) 16px; text-align: right;
-    font-family: var(--codefont); font-size: var(--fs); line-height: var(--lh);
+    font-family: var(--codefont); font-size: var(--fs-code); line-height: var(--lh-code);
     color: #484f58; background: var(--panel); user-select: none; overflow: hidden;
     border-right: 1px solid var(--border);
     white-space: pre;   /* 必须！否则行号的换行会被折叠成空格 */
@@ -79,7 +123,7 @@
     position: absolute; top: 0; left: 0; width: 100%; height: 100%;
     margin: 0; border: 0; outline: none;
     padding: var(--pad-y) var(--pad-x);
-    font-family: var(--codefont); font-size: var(--fs); line-height: var(--lh);
+    font-family: var(--codefont); font-size: var(--fs-code); line-height: var(--lh-code);
     white-space: pre; tab-size: 2; word-wrap: normal; overflow-wrap: normal;
     overflow: auto;
   }
@@ -110,15 +154,15 @@
   /* ── 输出区 ── */
   .out {
     flex: 1; overflow: auto; padding: var(--pad-y) 18px;
-    font-family: var(--tib), var(--codefont); font-size: 15px; line-height: 1.85;
+    font-family: var(--tib), var(--codefont); font-size: var(--fs-out); line-height: 1.9;
     white-space: pre-wrap; word-break: break-word;
   }
-  .out.mono { font-family: var(--codefont); font-size: 13px; line-height: 1.6; }
+  .out.mono { font-family: var(--codefont); font-size: 14px; line-height: 1.65; }
   .out .empty { color: var(--dim); font-style: italic; }
 
   .errbox .head { color: var(--red); font-weight: 600; margin-bottom: 6px; }
-  .errbox .msg { color: var(--fg); margin-bottom: 12px; font-family: var(--tib), sans-serif; font-size: 15px; }
-  .errbox .code { font-family: var(--codefont); font-size: 13px; line-height: 1.7;
+  .errbox .msg { color: var(--fg); margin-bottom: 12px; font-family: var(--tib), sans-serif; font-size: var(--fs-out); }
+  .errbox .code { font-family: var(--codefont); font-size: 14px; line-height: 1.7;
                   background: var(--panel); border-radius: 8px; padding: 10px 14px;
                   border: 1px solid var(--border); overflow-x: auto; white-space: pre; }
   .errbox .code .ln { color: #484f58; user-select: none; display: inline-block;
@@ -127,17 +171,34 @@
   .errbox .code .caret { color: var(--red); }
 
   .status {
-    padding: 5px 14px; font-size: 12px; font-family: var(--codefont); color: var(--dim);
+    padding: 7px 16px; font-size: 13px; font-family: var(--codefont); color: var(--dim);
     border-top: 1px solid var(--border); background: var(--panel); flex-shrink: 0;
     display: flex; gap: 14px;
   }
   .status .live { color: var(--green); }
 
   @media (max-width: 760px) {
-    main { flex-direction: column; height: calc(100% - 55px); }
-    .pane { flex: none; height: 50%; }
+    main { flex-direction: column; }
+    .pane { flex: 1 1 0; min-height: 0; }
     .pane + .pane { border-left: none; border-top: 1px solid var(--border); }
+    header { gap: 8px; padding: 10px 14px; }
+    .logo { font-size: 18px; }
+    .logo .ver { display: none; }
+    .reflink { padding: 7px 11px; }
   }
+
+  /* 中等宽度：收紧顶栏，别让它换行把内容挤下去 */
+  @media (max-width: 1180px) {
+    header { gap: 10px; padding: 11px 16px; }
+    .reflink { padding: 7px 12px; }
+  }
+  /* 示例下拉别把「运行」按钮挤走 */
+  #examples {
+    max-width: 420px; min-width: 120px;
+    overflow: hidden; text-overflow: ellipsis;
+  }
+  @media (max-width: 1000px) { #examples { max-width: 260px; } }
+  @media (max-width: 860px)  { #examples { max-width: 180px; } }
 </style>
 </head>
 <body>
@@ -152,6 +213,21 @@
 </header>
 
 <main>
+  <!-- 桌面版才有：本地文件浏览器 -->
+  <aside id="sidebar">
+    <div class="sb-head">
+      <span class="ttl">本地文件</span>
+      <button id="sb-up" title="上一级">↑</button>
+      <button id="sb-refresh" title="刷新">⟳</button>
+    </div>
+    <div class="sb-path" id="sb-path">—</div>
+    <div class="sb-list" id="sb-list"></div>
+    <div class="sb-foot">
+      <button id="sb-new" title="在当前目录新建 .ding 文件">新建</button>
+      <button id="sb-saveas" title="另存为">另存为</button>
+    </div>
+  </aside>
+
   <div class="pane">
     <div class="pane-head">
       <button class="tab active">源码</button>
@@ -405,6 +481,145 @@
   paint();
   renderEmpty('点右上角「运行」或按 Ctrl+Enter 执行代码');
   setTimeout(run, 250);
+
+  // ══════════════════════════════════════════════════════
+  //  桌面版：本地文件浏览器
+  //  只有通过 desktop/server.js 打开时才会激活（检测 /api/cwd）
+  // ══════════════════════════════════════════════════════
+  var FS = {
+    active: false,
+    cwd: '.',
+    rel: '.',
+    file: null,      // 当前打开的文件（相对路径）
+    dirty: false,
+  };
+
+  function api(p, opt) {
+    return fetch('/api' + p, opt).then(function (r) {
+      return r.json().then(function (j) {
+        if (!r.ok) throw new Error(j.error || ('HTTP ' + r.status));
+        return j;
+      });
+    });
+  }
+
+  function setDirty(v) {
+    FS.dirty = v;
+    var t = document.querySelector('.pane-head .tab.active');
+    if (t) t.textContent = '源码' + (v ? ' ●' : '');
+  }
+
+  function renderFileList(data) {
+    var box = $('sb-list');
+    box.innerHTML = '';
+    FS.rel = data.path;
+    $('sb-path').textContent = data.abs;
+    if (!data.entries.length) {
+      box.innerHTML = '<div class="sb-empty">（空目录）</div>';
+      return;
+    }
+    data.entries.forEach(function (e) {
+      var el = document.createElement('div');
+      el.className = 'sb-item' + (e.dir ? ' dir' : '');
+      var icon = e.dir ? '📁' : (e.name.endsWith('.ding') ? '📘' : '📄');
+      var size = e.dir ? '' : (e.size < 1024 ? e.size + ' B' : (e.size / 1024).toFixed(1) + ' K');
+      el.innerHTML = '<span class="ico">' + icon + '</span><span class="nm"></span>' +
+                     '<span class="sz">' + size + '</span>';
+      el.querySelector('.nm').textContent = e.name;
+      var child = (FS.rel === '.' ? '' : FS.rel + '/') + e.name;
+      if (e.dir) {
+        el.onclick = function () { loadDir(child); };
+      } else {
+        if (child === FS.file) el.classList.add('active');
+        el.onclick = function () { openFile(child); };
+      }
+      box.appendChild(el);
+    });
+  }
+
+  function loadDir(p) {
+    api('/list?path=' + encodeURIComponent(p || '.'))
+      .then(renderFileList)
+      .catch(function (e) { $('sb-list').innerHTML = '<div class="sb-empty">读取失败：' + esc(e.message) + '</div>'; });
+  }
+
+  function openFile(p) {
+    if (FS.dirty && !confirm('当前文件有未保存的修改，确定要切换吗？')) return;
+    api('/read?path=' + encodeURIComponent(p)).then(function (d) {
+      codeEl.value = d.content;
+      FS.file = p;
+      setDirty(false);
+      paint();
+      $('st-status').textContent = '已打开 ' + p;
+      loadDir(FS.rel);
+      run();
+    }).catch(function (e) { alert('打开失败：' + e.message); });
+  }
+
+  function saveFile(as) {
+    var p = FS.file;
+    if (as || !p) {
+      p = prompt('保存为（相对路径，比如 我的程序.ding）', p || '未命名.ding');
+      if (!p) return;
+    }
+    api('/write', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: p, content: codeEl.value }),
+    }).then(function () {
+      FS.file = p;
+      setDirty(false);
+      $('st-status').textContent = '已保存 ' + p;
+      loadDir(FS.rel);
+    }).catch(function (e) { alert('保存失败：' + e.message); });
+  }
+
+  // ── 给原生菜单（桌面版）调用的接口 ──
+  window.__save = function (as) { if (FS.active) saveFile(!!as); };
+  window.__run = function () { run(); };
+  window.__newFile = function () { $('sb-new').click(); };
+
+  // Ctrl+S 保存
+  document.addEventListener('keydown', function (e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+      e.preventDefault();
+      if (FS.active) saveFile(false);
+    }
+  });
+  // 改动标记
+  codeEl.addEventListener('input', function () { if (FS.active) setDirty(true); });
+
+  // 探测桌面版 API
+  api('/cwd').then(function (d) {
+    FS.active = true;
+    FS.cwd = d.cwd;
+    document.body.classList.add('desktop');
+    loadDir('.');
+    $('st-status').textContent = '桌面版 · ' + d.cwd;
+  }).catch(function () {
+    // 网页版：没有文件 API，侧栏保持隐藏
+    FS.active = false;
+  });
+
+  $('sb-refresh').onclick = function () { loadDir(FS.rel); };
+  $('sb-up').onclick = function () {
+    if (FS.rel === '.' || FS.rel === '') return;
+    var parts = FS.rel.split('/');
+    parts.pop();
+    loadDir(parts.length ? parts.join('/') : '.');
+  };
+  $('sb-new').onclick = function () {
+    var n = prompt('新文件名', '新程序.ding');
+    if (!n) return;
+    if (!/\.ding$/.test(n)) n += '.ding';
+    var p = (FS.rel === '.' ? '' : FS.rel + '/') + n;
+    api('/write', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: p, content: '# ' + n + '\n\nཔར("你好")\n' }),
+    }).then(function () { loadDir(FS.rel); openFile(p); });
+  };
+  $('sb-saveas').onclick = function () { saveFile(true); };
 })();
 </script>
 </body>

@@ -35,13 +35,14 @@ self.onmessage = function (e) {
 
   // ── ② 执行 ──
   // __quiet 传 true：print 只往 __out 里攒，不调 console.log
+  // __host 传空对象：浏览器没有文件系统，调用文件函数会给出友好报错
   var output = [];
   try {
     var fn = new Function(
-      '__quiet',
+      '__quiet', '__host',
       DingLang.PRELUDE + '\n' + code + '\nreturn __out;'
     );
-    output = fn(true) || [];
+    output = fn(true, { argv: [] }) || [];
   } catch (err) {
     self.postMessage({
       id: id,
