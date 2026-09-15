@@ -184,6 +184,29 @@ function tokenize(src, file = '<输入>') {
       continue;
     }
 
+    // ── 三引号多行字符串："""...""" ──
+    // 用来内嵌大段文本（比如一整篇藏文），不用写一堆 \n。
+    // 里面的一切都是字面的：不做转义、不做插值。
+    if (ch === '"' && peek(1) === '"' && peek(2) === '"') {
+      const startLine = line, startCol = col;
+      advance(3);
+      // 紧跟开引号的第一个换行不算（和 Python 一致）
+      if (peek() === '\r') advance();
+      if (peek() === '\n') advance();
+      let raw = '';
+      while (!atEnd()) {
+        if (peek() === '"' && peek(1) === '"' && peek(2) === '"') break;
+        raw += peek();
+        advance();
+      }
+      if (atEnd()) error('三引号字符串没有闭合的 """', startLine, startCol);
+      advance(3);
+      // 去掉末尾多出来的一个换行
+      if (raw.endsWith('\n')) raw = raw.slice(0, -1);
+      push('string', raw, startLine, startCol);
+      continue;
+    }
+
     // ── 字符串（支持 {表达式} 插值）──
     if (ch === '"' || ch === "'") {
       const quote = ch;
@@ -360,7 +383,11 @@ function parse(src, file = '<输入>') {
 
   function parseProgram() {
     const body = [];
-    while (!atEnd()) body.push(parseStatement());
+    while (!atEnd()) {
+      // 允许用 ; 分隔语句（也可以完全不用）
+      if (isSym(';')) { next(); continue; }
+      body.push(parseStatement());
+    }
     return { type: 'Program', body, line: 1, col: 1 };
   }
 
@@ -444,6 +471,7 @@ function parse(src, file = '<输入>') {
     const body = [];
     while (!isSym('}')) {
       if (atEnd()) error(`${what} 缺少闭合的 "}"`, t);
+      if (isSym(';')) { next(); continue; }   // 允许用 ; 分隔语句
       body.push(parseStatement());
     }
     expect('}');
@@ -1115,6 +1143,59 @@ function 藏文数字(n) {
 //    所以这里定义的也必须是 བོད_ཨང（踩过这个坑）。
 var བོད_ཨང = 藏文数字;   // 藏文数字（用户写 བོད་ཨང）
 var པར = print;           // པར = 印刷 / 输出
+
+// ── 文件操作 ──
+// 这些要靠运行环境提供能力：命令行（Node）有真实文件系统，
+// 浏览器里没有 —— 所以由外面传进来的 __host 对象决定能不能用。
+function __needHost(name) {
+  if (typeof __host === 'undefined' || !__host || typeof __host[name] !== 'function') {
+    throw new Error(name + ' 需要文件系统，浏览器里不可用（请用命令行或桌面版运行）');
+  }
+  return __host[name];
+}
+function 读文件(p)      { return __needHost('readFile')(String(p)); }
+function 读行(p)        { return __needHost('readLines')(String(p)); }
+function 写文件(p, s)   { return __needHost('writeFile')(String(p), __show(s)); }
+function 追加文件(p, s) { return __needHost('appendFile')(String(p), __show(s)); }
+function 文件存在(p)    { return __needHost('exists')(String(p)); }
+function 删文件(p)      { return __needHost('remove')(String(p)); }
+function 列目录(p)      { return __needHost('listDir')(String(p)); }
+
+// ── 文本处理小工具 ──
+// ⚠️ 整个 PRELUDE 是一个模板字符串，所以里面写 JS 的换行转义必须写两遍反斜杠，
+//    否则会被模板字符串先解析掉 —— 注释里也一样（这个坑踩了两次）。
+function 分行(t)        { return String(t).split('\\n'); }
+function 合并(列表, sep) { return (Array.isArray(列表) ? 列表 : [列表]).map(__show).join(sep === undefined ? '\\n' : String(sep)); }
+function 切分(t, sep)   { return String(t).split(sep === undefined ? ' ' : String(sep)); }
+function 去空白(t)      { return String(t).trim(); }
+function 替换(t, a, b)  { return String(t).split(String(a)).join(String(b)); }
+function 含有(t, s)     { return String(t).indexOf(String(s)) >= 0; }
+function 切片(t, a, b)  { return b === undefined ? String(t).slice(a) : String(t).slice(a, b); }
+function 转数字(t)      { var n = Number(String(t).trim()); if (n !== n) throw new Error('无法把 ' + JSON.stringify(t) + ' 转成数字'); return n; }
+function 转字符串(x)    { return __show(x); }
+
+// ── 整数运算 ──
+// 注意：/ 是浮点除法（和 JS / Python3 一样）。
+// 要整数除法用 整除()，要向下取整用 取整()。
+// 这个区分很有必要：写统计程序时 ((a*1000)/b)/10 那种写法很容易算错。
+function 取整(x)        { return Math.floor(Number(x)); }
+function 整除(a, b)     { return Math.floor(Number(a) / Number(b)); }
+function 取余(a, b)     { return Number(a) % Number(b); }
+function 四舍五入(x, 位) {
+  var p = Math.pow(10, 位 === undefined ? 0 : Number(位));
+  return Math.round(Number(x) * p) / p;
+}
+/** 把小数格式化成固定位数：格式化(8.5, 1) → "8.5"；格式化(8, 1) → "8.0" */
+function 格式化(x, 位) {
+  var d = 位 === undefined ? 1 : Number(位);
+  if (typeof x === 'number' && !isFinite(x)) return String(x);
+  return Number(x).toFixed(d);
+}
+function 大写(t)        { return String(t).toUpperCase(); }
+function 小写(t)        { return String(t).toLowerCase(); }
+
+// 命令行参数（由运行环境注入：ding run a.ding 甲 乙 → 参数 = ["甲","乙"]）
+var 参数 = (typeof __host !== 'undefined' && __host && __host.argv) ? __host.argv : [];
 function num(x) { const n = Number(x); if (Number.isNaN(n)) throw new Error('无法把 ' + __show(x) + ' 转成数字'); return n; }
 function __range(a, b, inclusive) {
   const out = [];

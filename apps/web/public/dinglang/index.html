@@ -161,7 +161,8 @@
   .out .empty { color: var(--dim); font-style: italic; }
 
   .errbox .head { color: var(--red); font-weight: 600; margin-bottom: 6px; }
-  .errbox .msg { color: var(--fg); margin-bottom: 12px; font-family: var(--tib), sans-serif; font-size: var(--fs-out); }
+  .errbox .msg { color: var(--fg); margin-bottom: 12px; font-family: var(--tib), sans-serif;
+                 font-size: var(--fs-out); white-space: pre-wrap; line-height: 1.75; }
   .errbox .code { font-family: var(--codefont); font-size: 14px; line-height: 1.7;
                   background: var(--panel); border-radius: 8px; padding: 10px 14px;
                   border: 1px solid var(--border); overflow-x: auto; white-space: pre; }
@@ -459,12 +460,35 @@
   });
 
   // ── 示例 ──
-  var exs = window.DING_EXAMPLES || [];
-  exs.forEach(function (ex) {
-    var o = document.createElement('option');
-    o.value = ex.id; o.textContent = ex.name + ' —— ' + ex.desc;
-    exSel.appendChild(o);
-  });
+  var exs = (window.DING_EXAMPLES || []).slice();
+
+  // ── 桌面版状态（要在示例填充之前定义，因为 rebuildExamples 会读它）──
+  var FS = {
+    active: false,   // 是否连着本地文件 API
+    cwd: '.',
+    rel: '.',
+    file: null,      // 当前打开的文件（相对路径）
+    dirty: false,
+  };
+
+  /** 重建下拉框；桌面模式下才显示「需要文件系统」的示例 */
+  function rebuildExamples() {
+    var keep = exSel.value;
+    exSel.innerHTML = '';
+    var shown = 0;
+    exs.forEach(function (ex) {
+      if (ex.desktopOnly && !FS.active) return;   // 浏览器里藏起来，免得跑出「不支持」的报错
+      var o = document.createElement('option');
+      o.value = ex.id;
+      o.textContent = ex.name + (ex.desktopOnly ? ' ←桌面版' : '') + ' —— ' + ex.desc;
+      exSel.appendChild(o);
+      shown++;
+    });
+    if (keep && exs.some(function (x) { return x.id === keep && (!x.desktopOnly || FS.active); })) {
+      exSel.value = keep;
+    }
+  }
+
   exSel.addEventListener('change', function () {
     var ex = exs.filter(function (x) { return x.id === exSel.value; })[0];
     if (ex) { codeEl.value = ex.code; paint(); run(); }
@@ -477,7 +501,14 @@
     codeEl.focus();
   });
 
-  if (exs.length) { codeEl.value = exs[0].code; exSel.value = exs[0].id; }
+  // 先按「网页版」填一遍下拉框（会隐藏需要文件系统的示例），
+  // 探测到桌面版 API 后会再填一遍，把那些示例放出来。
+  FS.active = false;
+  rebuildExamples();
+  if (exs.length) {
+    codeEl.value = exs[0].code;
+    exSel.value = exs[0].id;
+  }
   paint();
   renderEmpty('点右上角「运行」或按 Ctrl+Enter 执行代码');
   setTimeout(run, 250);
@@ -486,13 +517,6 @@
   //  桌面版：本地文件浏览器
   //  只有通过 desktop/server.js 打开时才会激活（检测 /api/cwd）
   // ══════════════════════════════════════════════════════
-  var FS = {
-    active: false,
-    cwd: '.',
-    rel: '.',
-    file: null,      // 当前打开的文件（相对路径）
-    dirty: false,
-  };
 
   function api(p, opt) {
     return fetch('/api' + p, opt).then(function (r) {
@@ -594,11 +618,21 @@
     FS.active = true;
     FS.cwd = d.cwd;
     document.body.classList.add('desktop');
+    rebuildExamples();          // 桌面模式：把「需要文件系统」的示例也放出来
     loadDir('.');
+    // 桌面模式下默认切到「读本地文件」那个示例 —— 这才展示了桌面版的能力
+    var f = exs.filter(function (x) { return x.id === 'tibFile'; })[0];
+    if (f) {
+      exSel.value = f.id;
+      codeEl.value = f.code;
+      paint();
+      run();
+    }
     $('st-status').textContent = '桌面版 · ' + d.cwd;
   }).catch(function () {
     // 网页版：没有文件 API，侧栏保持隐藏
     FS.active = false;
+    rebuildExamples();
   });
 
   $('sb-refresh').onclick = function () { loadDir(FS.rel); };
