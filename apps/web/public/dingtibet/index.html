@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DingTibet —— 一个 97 KB 的藏文操作系统</title>
+<meta name="description" content="从零手写的藏文操作系统：multiboot 引导、Bochs VBE 显示、PS/2 键盘中断、ATA 硬盘、自研文件系统、文本编辑器，以及能跑藏文变量名的 DingLang 解释器。内核 97 KB，零依赖。">
+<style>
+  :root{
+    --bg:#0d1117; --fg:#e6edf3; --dim:#8b949e; --line:#21262d;
+    --accent:#58a6ff; --tib:#ffd479; --code:#161b22; --ok:#3fb950;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+    font:16px/1.75 -apple-system,"Segoe UI","Noto Sans Tibetan",system-ui,sans-serif;}
+  .wrap{max-width:860px;margin:0 auto;padding:48px 20px 96px}
+  h1{font-size:30px;margin:0 0 6px;letter-spacing:.3px}
+  .sub{color:var(--dim);font-size:15px;margin-bottom:32px}
+  h2{font-size:20px;margin:44px 0 14px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+  h3{font-size:16px;margin:26px 0 8px;color:var(--accent)}
+  p{margin:12px 0}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+  code{background:var(--code);padding:2px 6px;border-radius:5px;
+    font:14px/1.6 ui-monospace,"Cascadia Code",Consolas,monospace;color:#ffa657}
+  pre{background:var(--code);border:1px solid var(--line);border-radius:10px;
+    padding:16px 18px;overflow-x:auto;
+    font:13.5px/1.7 ui-monospace,"Cascadia Code",Consolas,monospace}
+  pre .c{color:#6e7681}
+  pre .k{color:#ff7b72}
+  pre .s{color:#a5d6ff}
+  pre .t{color:var(--tib)}
+  .tib{color:var(--tib);font-family:"Microsoft Himalaya","Noto Sans Tibetan",serif;font-size:1.15em}
+  .shot{border:1px solid var(--line);border-radius:10px;overflow:hidden;margin:18px 0}
+  .shot img{display:block;width:100%}
+  .shot figcaption{color:var(--dim);font-size:13px;padding:9px 14px;
+    background:var(--code);border-top:1px solid var(--line)}
+  table{width:100%;border-collapse:collapse;margin:16px 0;font-size:14.5px}
+  th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line)}
+  th{color:var(--dim);font-weight:600}
+  td code{font-size:13px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:18px 0}
+  .card{background:var(--code);border:1px solid var(--line);border-radius:9px;padding:13px 15px}
+  .card b{display:block;font-size:15px;margin-bottom:3px}
+  .card span{color:var(--dim);font-size:13px}
+  .note{border-left:3px solid var(--accent);background:var(--code);
+    padding:12px 16px;border-radius:0 8px 8px 0;margin:18px 0;font-size:15px}
+  .foot{margin-top:56px;padding-top:22px;border-top:1px solid var(--line);
+    color:var(--dim);font-size:14px}
+  .kbd{display:inline-block;background:#21262d;border:1px solid #30363d;
+    border-bottom-width:2px;border-radius:5px;padding:1px 7px;
+    font:13px ui-monospace,Consolas,monospace}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>DingTibet</h1>
+<div class="sub">一个 97 KB 的藏文操作系统 · 从零手写 · 零第三方依赖</div>
+
+<p>藏文有 30 个基字、4 个元音、还有上加字下加字，字符要上下堆叠。做藏文系统最难的不是翻译界面，而是<strong>字形本身</strong>。这个项目从头解决了它，然后一路做到了文件系统和编程语言。</p>
+
+<div class="grid">
+  <div class="card"><b>97 KB</b><span>内核体积</span></div>
+  <div class="card"><b>409</b><span>藏文字形</span></div>
+  <div class="card"><b>51</b><span>踩过的坑</span></div>
+  <div class="card"><b>0</b><span>第三方依赖</span></div>
+</div>
+
+<h2>跑起来是什么样</h2>
+
+<figure class="shot">
+  <img src="img/terminal.png" alt="DingTibet 终端界面">
+  <figcaption>黑底白字的终端。藏文与英文混排，基线对齐，光标闪烁。</figcaption>
+</figure>
+
+<p>屏幕上是 <span class="tib">བོད་ཡིག་གི་བརྡ་ལན་མ་ལག</span>（藏文的命令系统）。提示符 <code>&gt;</code> 在英文模式，切到藏文输入会变成 <span class="tib">ཨོཾ&gt;</span> —— 六字真言的第一个字。</p>
+
+<h2>整条链路都是藏文</h2>
+
+<p>输入、文件名、文件内容、命令、变量名 —— 没有一处需要退回英文。</p>
+
+<figure class="shot">
+  <img src="img/tibetan-files.png" alt="藏文文件名">
+  <figcaption><code>ཡིག་ཆ</code>（列文件）列出了藏文名的文件，并给每行编号，方便用编号引用。</figcaption>
+</figure>
+
+<h3>藏文键盘输入</h3>
+
+<p>用的是微软 Windows 里的「藏文（中国）」键盘布局，一个键对应一个藏文字母。<code>M</code> 是死键，按完再按字母得到下加字：</p>
+
+<pre><span class="c"># 键序 → 藏文</span>
+a f M r i        →   <span class="t">འབྲི</span>      <span class="c">（写 / 编辑）</span>
+k M l o k        →   <span class="t">ཀློག</span>      <span class="c">（读）</span>
+f c M r 空格 x i s  →   <span class="t">བཀྲ་ཤིས</span>   <span class="c">（吉祥）</span></pre>
+
+<p>空格键会智能判断：前面是完整命令时输出真空格，否则输出藏文音节点 <span class="tib">་</span>。</p>
+
+<h3>藏文文件内容</h3>
+
+<figure class="shot">
+  <img src="img/tibetan-content.png" alt="藏文文件内容">
+  <figcaption>编辑器里写藏文，<span class="kbd">Ctrl</span>+<span class="kbd">T</span> 切换藏文输入，<span class="kbd">Ctrl</span>+<span class="kbd">S</span> 保存。文件真的落在磁盘上，重启还在。</figcaption>
+</figure>
+
+<h3>藏文变量名</h3>
+
+<p>内核里装了一个 DingLang 解释器。变量的名字可以直接写藏文：</p>
+
+<pre><span class="c"># 在 DingTibet 里 run t.ding</span>
+<span class="k">let</span> <span class="t">བཀྲ་ཤིས</span> = 10
+<span class="k">let</span> <span class="t">བོད་ཡིག</span> = 32
+print(<span class="t">བཀྲ་ཤིས</span> * 2)
+<span class="k">let</span> <span class="t">གསུམ</span> = 3
+<span class="k">while</span> i &lt; <span class="t">གསུམ</span> {
+  print(i)
+  i = i + 1
+}</pre>
+
+<figure class="shot">
+  <img src="img/tibetan-code.png" alt="藏文变量名的程序在运行">
+  <figcaption>同一段程序在真实硬件上跑出来的结果。</figcaption>
+</figure>
+
+<h2>系统里有什么</h2>
+
+<table>
+  <tr><th>子系统</th><th>实现</th></tr>
+  <tr><td>引导</td><td>multiboot1，GRUB / QEMU <code>-kernel</code> 直接加载</td></tr>
+  <tr><td>显示</td><td>Bochs VBE 扩展，1024×768×256 线性帧缓冲</td></tr>
+  <tr><td>输入</td><td>PS/2 键盘 IRQ1，含方向键扩展扫描码</td></tr>
+  <tr><td>中断</td><td>IDT + 8259 PIC 重映射 + PIT 100 Hz</td></tr>
+  <tr><td>终端</td><td>黑底白字，24px，基线对齐，闪烁光标，精确退格</td></tr>
+  <tr><td>藏文</td><td>409 个字形，含 120 个辅音+元音组合</td></tr>
+  <tr><td>调试</td><td>串口 <code>printk</code>，支持 <code>%s %c %d %u %x</code></td></tr>
+  <tr><td>时钟</td><td>CMOS RTC，读日期时间</td></tr>
+  <tr><td>磁盘</td><td>ATA PIO，LBA28 读写</td></tr>
+  <tr><td>文件系统</td><td>自研 DIFS，能持久化，支持藏文文件名和编号引用</td></tr>
+  <tr><td>编辑器</td><td>多行编辑，藏文输入，保存到磁盘</td></tr>
+  <tr><td>语言</td><td>DingLang 解释器：变量、算术、字符串、判断、循环</td></tr>
+</table>
+
+<h2>几个关键取舍</h2>
+
+<h3>为什么不用自己写的 bootloader</h3>
+<p>一开始是手写的引导扇区，踩了五个坑：链接地址、CHS 推进、栈指针位置、节重叠、读盘不完整。最后一个查了很久——内核只被读了 4363 字节，后面全是 0，CPU 执行到 <code>00 00</code> 就崩了。换成 multiboot 之后这些坑全部消失。</p>
+
+<h3>为什么从 VGA 模式 12h 换成 Bochs VBE</h3>
+<p>模式 12h 是平面式显存，四个位平面要配合 map mask、位掩码、odd/even 使用，调了很久屏幕还是全黄加竖条纹。Bochs VBE 给出线性帧缓冲，一个像素一个字节，问题立刻消失。而且帧缓冲地址是从 PCI BAR0 读出来的，不是写死的 <code>0xE0000000</code> —— 新版本 QEMU 把它放在 <code>0xFD000000</code>，写死会直接黑屏。</p>
+
+<h3>为什么字模不用 ClearType</h3>
+<p>这是最隐蔽的一个坑。字模是用 Windows GDI 渲染的，一开始用 <code>CLEARTYPE_QUALITY</code>，结果小字号的藏文全是碎片。原因是 ClearType 做的是 RGB 子像素渲染，细笔画边缘是彩色条纹，转灰度后亮度偏低，被二值化阈值当成背景丢掉了。改成 <code>ANTIALIASED_QUALITY</code> 并降低阈值就好了。</p>
+
+<div class="note">
+  开发过程中一共踩了 51 个坑，按引导、显示、字模、工具链、键盘中断、排版、藏文、文件系统、解释器分类，全部记在仓库的 <code>README.md</code> 和代码注释里。
+</div>
+
+<h2>调试方式</h2>
+
+<p>中途最有用的一步是加上串口输出。在这之前只能靠截图肉眼看，屏幕黑了不知道为什么、字碎了不知道为什么、多了几个字符查很久。有了 <code>printk</code> 之后：</p>
+
+<pre><span class="c">$</span> qemu-system-i386 -kernel dingtibet.elf -serial file:serial.log
+
+=== DingTibet booting ===
+[vga] 1024x768x8  fb=0xfd000000  pitch=1024
+[idt] PIC remapped, PIT 100Hz, IRQ0+IRQ1 on
+[rtc] 2026-09-17 11:43:14
+[fs]  DIFS mounted, 3 file(s), 1 write(s)
+=== type 'help' ===</pre>
+
+<p>后来调 DingLang 解释器也是靠它定位的：逐语句打日志，发现第 3 条语句卡住，再往 <code>eval</code> 里打，发现是数字输出函数里的一段浮点小数处理在内核环境里不工作。去掉就好了。</p>
+
+<h2>源码</h2>
+
+<p>内核约 6000 行 C 与汇编，工具脚本约 3400 行 Python。</p>
+
+<pre>kernel/
+  multiboot.S       multiboot 头 + 32 位入口
+  irq.S             中断汇编桩
+  vga.c             Bochs VBE + PCI 找帧缓冲
+  idt.c             IDT + PIC 重映射 + PIT
+  keyboard.c        PS/2 键盘
+  tibkbd.c          藏文键位表
+  cmos.c            CMOS 实时时钟
+  ata.c             ATA PIO 硬盘驱动
+  fs.c              DIFS 文件系统
+  serial.c          串口 + printk
+  wylie.c           Wylie 转写 ← 藏文
+  ding.c            DingLang 解释器
+  kernel.c          内核主体 + Shell + 编辑器
+
+tools/
+  make-font.py      GDI 渲染藏文字模
+  gen-wylie-header.py  生成 C 查表
+  check-glyphs.py   检查缺字</pre>
+
+<p>工具链只用 MinGW 的 gcc、ld、objcopy —— 不需要 nasm，不需要 make。</p>
+
+<div class="foot">
+  <p>相关：<a href="/dinglang/">DingLang 编程语言</a> · <a href="/tibetan/">藏语学习工具</a> · <a href="/projects">全部项目</a></p>
+  <p>内核 97 KB · 409 个藏文字形 · 51 个坑</p>
+</div>
+
+</div>
+</body>
+</html>

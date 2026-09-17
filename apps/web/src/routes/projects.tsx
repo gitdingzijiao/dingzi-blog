@@ -78,6 +78,13 @@ function getProjects(locale: ReturnType<typeof getCurrentLocale>): readonly Proj
         status: "live",
       },
       {
+        name: "DingTibet 藏文操作系统",
+        description: "从零手写的一个 97 KB 藏文操作系统，零第三方依赖，跑在 QEMU 上。multiboot 引导、Bochs VBE 1024×768 线性帧缓冲、PS/2 键盘与中断处理、串口 printk 调试、CMOS 时钟、ATA 硬盘驱动、自研 DIFS 文件系统（可持久化，支持藏文文件名）、多行文本编辑器，以及一个能跑通解释执行的 DingLang —— 变量的名字可以直接写藏文。整条链路都在藏文里：藏文键盘输入 → 藏文文件名 → 藏文命令 → 藏文变量名的程序。开发过程踩过 51 个坑，全部记在 README 里。",
+        tags: ["操作系统", "C", "汇编", "藏文", "内核"],
+        href: "/dingtibet/",
+        status: "live",
+      },
+      {
         name: "DingLang 编程语言（在线编译器）",
         description: "自己设计并实现的一门小语言，编译到 JavaScript。支持 Unicode 标识符 —— 变量名、函数名可以直接写中文和藏文（含藏文音节点 ་），这是它最特别的地方。完整实现词法分析、语法分析、语义检查、代码生成四个阶段，约 1000 行。报错带精确行列号；网页版在 Web Worker 里执行，写死循环不会卡死页面。",
         tags: ["编译器", "编程语言", "Unicode", "藏文"],
