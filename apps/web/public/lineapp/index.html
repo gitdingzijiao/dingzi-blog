@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#0d1420">
 <title>线路台账</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="线路台账">
+
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
@@ -513,6 +519,19 @@ renderAll();
 })();
 if (db.points.length === 0 && db.lines.length === 0){
   setTimeout(() => toast('点「＋ 打点」开始记录'), 600);
+}
+</script>
+
+<script>
+/* Service Worker 注册 ✓ */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').then(reg => {
+      console.log('[PWA] SW 已注册', reg.scope);
+    }).catch(err => {
+      console.warn('[PWA] SW 注册失败', err);
+    });
+  });
 }
 </script>
 </body>

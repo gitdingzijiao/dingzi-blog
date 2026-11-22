@@ -1,0 +1,17 @@
+{
+  "name": "线路台账",
+  "short_name": "线路台账",
+  "description": "记录光交箱、分纤箱、接头盒、电杆、杆路、光缆",
+  "start_url": "/lineapp/",
+  "scope": "/lineapp/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0d1420",
+  "theme_color": "#0d1420",
+  "lang": "zh-CN",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
