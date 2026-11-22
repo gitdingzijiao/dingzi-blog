@@ -1,0 +1,519 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#0d1420">
+<title>线路台账</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  :root{
+    --bg:#0d1420; --panel:#141d2b; --line:#25344a; --text:#e6edf7;
+    --dim:#8fa4c0; --accent:#4ea1ff; --ok:#37d67a; --warn:#ffb020; --err:#ff5b6e;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
+    font:15px/1.5 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif;overflow:hidden}
+  #map{position:absolute;inset:0;background:#0a1018}
+  .leaflet-container{background:#0a1018}
+
+  /* 顶栏 */
+  header{position:absolute;top:0;left:0;right:0;z-index:1000;display:flex;align-items:center;gap:8px;
+    padding:calc(env(safe-area-inset-top) + 10px) 12px 10px;background:linear-gradient(#0d1420f5,#0d1420b0 70%,#0d142000)}
+  header h1{font-size:17px;margin:0;flex:1;font-weight:700;letter-spacing:.5px;text-shadow:0 1px 3px #000}
+  .badge{font-size:12px;color:var(--dim);background:#ffffff14;padding:3px 8px;border-radius:99px}
+
+  /* 底栏按钮 */
+  .fabbar{position:absolute;left:0;right:0;bottom:0;z-index:1000;display:flex;gap:10px;
+    padding:12px 12px calc(env(safe-area-inset-bottom) + 12px);background:linear-gradient(#0d142000,#0d1420ee)}
+  button{font:inherit;color:var(--text);background:var(--panel);border:1px solid var(--line);
+    border-radius:12px;padding:12px 14px;cursor:pointer}
+  button:active{transform:scale(.97)}
+  .primary{background:var(--accent);border-color:var(--accent);color:#04121f;font-weight:600}
+  .grow{flex:1}
+  .icon{width:52px;padding:12px 0;text-align:center;font-size:20px}
+
+  /* 列表抽屉 */
+  .sheet{position:absolute;left:0;right:0;bottom:0;z-index:1100;max-height:62%;background:var(--panel);
+    border-radius:16px 16px 0 0;border-top:1px solid var(--line);transform:translateY(102%);
+    transition:transform .22s ease;display:flex;flex-direction:column}
+  .sheet.open{transform:translateY(0)}
+  .sheet .head{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .sheet .head b{flex:1}
+  .list{overflow:auto;padding:6px 8px 20px}
+  .row{display:flex;gap:10px;align-items:center;padding:10px;border-radius:12px}
+  .row:active{background:#ffffff10}
+  .dot{width:10px;height:10px;border-radius:50%;flex:none}
+  .row .meta{flex:1;min-width:0}
+  .row .t{font-size:15px}
+  .row .s{font-size:12px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .empty{color:var(--dim);text-align:center;padding:28px 10px;font-size:13px}
+
+  /* 表单弹层 */
+  .modal{position:absolute;inset:0;z-index:1200;background:#0009;display:none;align-items:flex-end}
+  .modal.open{display:flex}
+  .card{width:100%;background:var(--panel);border-radius:16px 16px 0 0;padding:16px 16px calc(env(safe-area-inset-bottom) + 16px);
+    border-top:1px solid var(--line);max-height:88%;overflow:auto}
+  .card h2{margin:0 0 12px;font-size:16px}
+  label{display:block;font-size:12px;color:var(--dim);margin:10px 0 4px}
+  input,select,textarea{width:100%;font:inherit;color:var(--text);background:#0b1220;border:1px solid var(--line);
+    border-radius:10px;padding:11px 12px;outline:none}
+  textarea{min-height:64px;resize:vertical}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+  .chip{padding:8px 12px;border-radius:99px;border:1px solid var(--line);font-size:13px;color:var(--dim)}
+  .chip.on{border-color:var(--accent);color:var(--accent);background:#4ea1ff1a}
+  .row2{display:flex;gap:10px;margin-top:14px}
+  .row2 button{flex:1}
+  .thumb{width:100%;height:120px;object-fit:cover;border-radius:10px;margin-top:8px;border:1px solid var(--line)}
+  .coord{font-size:12px;color:var(--dim);margin-top:6px}
+
+  /* 提示条 */
+  #toast{position:absolute;left:50%;bottom:110px;transform:translateX(-50%);z-index:1300;
+    background:#1c2740;border:1px solid var(--line);padding:9px 14px;border-radius:99px;font-size:13px;
+    opacity:0;transition:opacity .2s;pointer-events:none;max-width:86%}
+  #toast.show{opacity:1}
+
+  /* 打点模式提示 */
+  #hint{position:absolute;top:calc(env(safe-area-inset-top) + 54px);left:12px;right:12px;z-index:1000;
+    background:#4ea1ff22;border:1px solid #4ea1ff66;color:#bcdcff;padding:8px 12px;border-radius:10px;
+    font-size:13px;display:none}
+  #hint.show{display:block}
+</style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<header>
+  <h1>线路台账</h1>
+  <span class="badge" id="stat">0 点位</span>
+</header>
+
+<div id="hint"></div>
+
+<div class="fabbar" id="bar">
+  <button class="icon" id="btnLoc">◎</button>
+  <button class="primary grow" id="btnAdd">＋ 打点</button>
+  <button class="grow" id="btnLine">画杆路</button>
+  <button class="icon" id="btnList">☰</button>
+</div>
+
+<div class="sheet" id="sheet">
+  <div class="head">
+    <b>台账列表</b>
+    <button id="btnExport">导出</button>
+    <button id="btnClose">关闭</button>
+  </div>
+  <div class="list" id="list"></div>
+</div>
+
+<div class="modal" id="modal">
+  <div class="card">
+    <h2 id="mTitle">新增点位</h2>
+
+    <label>类型</label>
+    <div class="chips" id="chips"></div>
+
+    <label>编号</label>
+    <input id="fCode" placeholder="如 O-003 / F-012 / G-001">
+
+    <label>名称 / 位置描述</label>
+    <input id="fName" placeholder="如 塞赤寺乡政府门口">
+
+    <label>备注</label>
+    <textarea id="fNote" placeholder="容量、芯数、状态等"></textarea>
+
+    <label>现场照片</label>
+    <input type="file" id="fPhoto" accept="image/*" capture="environment">
+    <img class="thumb" id="fThumb" style="display:none">
+
+    <div class="coord" id="fCoord"></div>
+
+    <div class="row2">
+      <button id="mCancel">取消</button>
+      <button class="primary" id="mSave">保存</button>
+    </div>
+    <div class="row2" id="mDanger" style="display:none">
+      <button id="mDelete" style="border-color:#ff5b6e66;color:#ff8a96">删除这条</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ============ 配置 ============ */
+const TYPES = [
+  { id:'o',  name:'光交箱',  color:'#4ea1ff' },
+  { id:'f',  name:'分纤箱',  color:'#37d67a' },
+  { id:'j',  name:'接头盒',  color:'#ffb020' },
+  { id:'p',  name:'电杆',    color:'#a78bfa' },
+  { id:'r',  name:'杆路',    color:'#ff5b6e' },
+  { id:'c',  name:'光缆',    color:'#22d3ee' },
+];
+const LINE_TYPES = ['r','c'];
+const STORE_KEY = 'line_ledger_v1';
+
+/* ============ 坐标系转换 WGS84 <-> GCJ02（高德底图必须） ============ */
+const PI = Math.PI, A = 6378245.0, EE = 0.00669342162296594323;
+function outOfChina(lng, lat){ return !(lng>73.66 && lng<135.05 && lat>3.86 && lat<53.55); }
+function tLat(x,y){ let r=-100+2*x+3*y+0.2*y*y+0.1*x*y+0.2*Math.sqrt(Math.abs(x));
+  r+=(20*Math.sin(6*x*PI)+20*Math.sin(2*x*PI))*2/3; r+=(20*Math.sin(y*PI)+40*Math.sin(y/3*PI))*2/3;
+  r+=(160*Math.sin(y/12*PI)+320*Math.sin(y*PI/30))*2/3; return r; }
+function tLng(x,y){ let r=300+x+2*y+0.1*x*x+0.1*x*y+0.1*Math.sqrt(Math.abs(x));
+  r+=(20*Math.sin(6*x*PI)+20*Math.sin(2*x*PI))*2/3; r+=(20*Math.sin(x*PI)+40*Math.sin(x/3*PI))*2/3;
+  r+=(150*Math.sin(x/12*PI)+300*Math.sin(x/30*PI))*2/3; return r; }
+function wgs2gcj(lng, lat){
+  if (outOfChina(lng, lat)) return [lng, lat];
+  let dLat = tLat(lng-105, lat-35), dLng = tLng(lng-105, lat-35);
+  const radLat = lat/180*PI, magic = Math.sin(radLat); const f = 1-EE*magic*magic;
+  const s = Math.sqrt(f); dLat = (dLat*180)/((A*(1-EE))/(f*s)*PI);
+  dLng = (dLng*180)/(A/s*Math.cos(radLat)*PI);
+  return [lng+dLng, lat+dLat];
+}
+
+/* ============ 存储 ============ */
+let db = { points: [], lines: [] };
+function load(){
+  try { const raw = localStorage.getItem(STORE_KEY); if (raw) db = JSON.parse(raw); } catch(e){}
+  db.points = db.points || []; db.lines = db.lines || [];
+}
+function save(){
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(db)); }
+  catch(e){ toast('存储满了，建议导出后清理照片'); }
+}
+
+/* ============ 地图 ============ */
+const HOME = [34.095887, 102.639131];     // 碌曲 · 塞赤寺
+const map = L.map('map', { zoomControl:false, attributionControl:false }).setView(HOME, 15);
+
+const roads = L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}',
+  { subdomains:'1234', maxZoom:18 });
+const sat = L.tileLayer('https://webst0{s}.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}',
+  { subdomains:'1234', maxZoom:18 });
+roads.addTo(map);
+let satOn = false;
+
+/* ============ 渲染 ============ */
+const layerPoints = L.layerGroup().addTo(map);
+const layerLines  = L.layerGroup().addTo(map);
+
+function typeOf(id){ return TYPES.find(t => t.id === id) || TYPES[0]; }
+
+function renderAll(){
+  layerPoints.clearLayers(); layerLines.clearLayers();
+
+  db.lines.forEach(line => {
+    if (!line.pts || line.pts.length < 2) return;
+    const t = typeOf(line.type);
+    const latlngs = line.pts.map(p => { const g = wgs2gcj(p[0], p[1]); return [g[1], g[0]]; });
+    L.polyline(latlngs, { color:t.color, weight:4, opacity:.9 })
+      .on('click', () => openForm('line', line.id))
+      .addTo(layerLines);
+  });
+
+  db.points.forEach(p => {
+    const t = typeOf(p.type);
+    const g = wgs2gcj(p.lng, p.lat);
+    const icon = L.divIcon({
+      className:'', iconSize:[18,18], iconAnchor:[9,9],
+      html:`<div style="width:18px;height:18px;border-radius:50%;background:${t.color};
+             border:2px solid #fff;box-shadow:0 0 0 2px ${t.color}55, 0 2px 6px #0008"></div>`
+    });
+    L.marker([g[1], g[0]], { icon })
+      .on('click', () => openForm('point', p.id))
+      .addTo(layerPoints);
+  });
+
+  document.getElementById('stat').textContent =
+    db.points.length + ' 点位 · ' + db.lines.length + ' 线路';
+  renderList();
+}
+
+function renderList(){
+  const el = document.getElementById('list');
+  const items = [
+    ...db.points.map(p => ({ kind:'point', id:p.id, t:typeOf(p.type), code:p.code, name:p.name, sub:`${p.lat.toFixed(6)}, ${p.lng.toFixed(6)}` })),
+    ...db.lines.map(l => ({ kind:'line', id:l.id, t:typeOf(l.type), code:l.code, name:l.name, sub:`${(l.pts||[]).length} 个点` })),
+  ];
+  if (!items.length){ el.innerHTML = '<div class="empty">还没有数据<br>点右下角「＋ 打点」开始</div>'; return; }
+
+  el.innerHTML = items.map(it => `
+    <div class="row" data-kind="${it.kind}" data-id="${it.id}">
+      <span class="dot" style="background:${it.t.color}"></span>
+      <span class="meta">
+        <div class="t">${esc(it.code || '(无编号)')} ${it.name ? '· ' + esc(it.name) : ''}</div>
+        <div class="s">${it.t.name} · ${esc(it.sub)}</div>
+      </span>
+    </div>`).join('');
+
+  el.querySelectorAll('.row').forEach(row => {
+    row.onclick = () => {
+      const it = items.find(x => x.id === row.dataset.id && x.kind === row.dataset.kind);
+      if (!it) return;
+      const rec = it.kind === 'point' ? db.points.find(p=>p.id===it.id) : db.lines.find(l=>l.id===it.id);
+      const c = it.kind === 'point' ? wgs2gcj(rec.lng, rec.lat) : wgs2gcj(rec.pts[0][0], rec.pts[0][1]);
+      map.setView([c[1], c[0]], it.kind === 'point' ? 17 : 15);
+      closeSheet();
+      setTimeout(() => openForm(it.kind, it.id), 260);
+    };
+  });
+}
+
+/* ============ 表单 ============ */
+let editing = { kind:null, id:null, lat:null, lng:null, pts:null, photo:null };
+
+function openForm(kind, id){
+  const m = document.getElementById('modal');
+  const isNew = !id;
+  const rec = id ? (kind==='point' ? db.points.find(p=>p.id===id) : db.lines.find(l=>l.id===id)) : null;
+
+  editing = {
+    kind, id: id || null,
+    lat: rec ? rec.lat : (kind==='point' ? editing.lat : null),
+    lng: rec ? rec.lng : (kind==='point' ? editing.lng : null),
+    pts: rec ? rec.pts : editing.pts,
+    photo: rec ? rec.photo : null,
+  };
+
+  document.getElementById('mTitle').textContent = isNew
+    ? (kind === 'point' ? '新增点位' : '新增线路')
+    : '编辑';
+
+  const chips = document.getElementById('chips');
+  const list = kind === 'point' ? TYPES.filter(t=>!LINE_TYPES.includes(t.id)) : TYPES.filter(t=>LINE_TYPES.includes(t.id));
+  chips.innerHTML = list.map(t =>
+    `<span class="chip ${((rec && rec.type)||list[0].id)===t.id?'on':''}" data-id="${t.id}">${t.name}</span>`).join('');
+  chips.querySelectorAll('.chip').forEach(c => c.onclick = () => {
+    chips.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));
+    c.classList.add('on');
+  });
+
+  document.getElementById('fCode').value = rec ? (rec.code||'') : '';
+  document.getElementById('fName').value = rec ? (rec.name||'') : '';
+  document.getElementById('fNote').value = rec ? (rec.note||'') : '';
+
+  const thumb = document.getElementById('fThumb');
+  if (rec && rec.photo){ thumb.src = rec.photo; thumb.style.display='block'; }
+  else { thumb.style.display='none'; thumb.src=''; }
+
+  const coordEl = document.getElementById('fCoord');
+  if (kind === 'point') coordEl.textContent = `坐标：${(+editing.lat).toFixed(6)}, ${(+editing.lng).toFixed(6)}`;
+  else coordEl.textContent = `线路：${(editing.pts||[]).length} 个点`;
+
+  document.getElementById('mDanger').style.display = isNew ? 'none' : 'flex';
+  m.classList.add('open');
+}
+
+function closeModal(){ document.getElementById('modal').classList.remove('open'); }
+
+document.getElementById('mCancel').onclick = closeModal;
+document.getElementById('mSave').onclick = () => {
+  const type = document.querySelector('#chips .chip.on')?.dataset.id || 'o';
+  const code = document.getElementById('fCode').value.trim();
+  const name = document.getElementById('fName').value.trim();
+  const note = document.getElementById('fNote').value.trim();
+
+  if (editing.kind === 'point'){
+    if (!code && !name){ toast('至少填个编号或名称'); return; }
+    if (editing.id){
+      const p = db.points.find(x=>x.id===editing.id);
+      Object.assign(p, { type, code, name, note, photo: editing.photo });
+    } else {
+      db.points.push({ id: uid(), type, code, name, note, photo: editing.photo,
+        lat: editing.lat, lng: editing.lng, ts: Date.now() });
+    }
+  } else {
+    if (!editing.pts || editing.pts.length < 2){ toast('线路至少要 2 个点'); return; }
+    if (editing.id){
+      const l = db.lines.find(x=>x.id===editing.id);
+      Object.assign(l, { type, code, name, note });
+    } else {
+      db.lines.push({ id: uid(), type, code, name, note, pts: editing.pts, ts: Date.now() });
+    }
+  }
+  save(); renderAll(); closeModal(); toast('已保存');
+};
+
+document.getElementById('mDelete').onclick = () => {
+  if (!editing.id) return;
+  if (!confirm('确定删除？')) return;
+  if (editing.kind === 'point') db.points = db.points.filter(p=>p.id!==editing.id);
+  else db.lines = db.lines.filter(l=>l.id!==editing.id);
+  save(); renderAll(); closeModal(); toast('已删除');
+};
+
+/* 照片压缩 */
+document.getElementById('fPhoto').onchange = e => {
+  const f = e.target.files[0]; if (!f) return;
+  const img = new Image();
+  img.onload = () => {
+    const W = 480, s = Math.min(1, W / img.width);
+    const c = document.createElement('canvas');
+    c.width = img.width * s; c.height = img.height * s;
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    editing.photo = c.toDataURL('image/jpeg', 0.6);
+    const t = document.getElementById('fThumb');
+    t.src = editing.photo; t.style.display = 'block';
+  };
+  img.src = URL.createObjectURL(f);
+};
+
+/* ============ 打点 / 画线 ============ */
+let tmpPts = [], tmpLine = null, drawMode = false;
+
+document.getElementById('btnAdd').onclick = () => {
+  getPos().then(({lat,lng}) => {
+    editing.lat = lat; editing.lng = lng;
+    openForm('point');
+  }).catch(() => toast('定位失败：请检查权限或改用「画杆路」手动取点'));
+};
+
+document.getElementById('btnLine').onclick = () => {
+  if (drawMode){ finishLine(); return; }
+  drawMode = true; tmpPts = [];
+  document.getElementById('btnLine').textContent = '完成';
+  showHint('在地图上依次点击杆路拐点，点「完成」保存');
+  map.getContainer().style.cursor = 'crosshair';
+};
+
+map.on('click', e => {
+  if (!drawMode) return;
+  tmpPts.push([e.latlng.lng, e.latlng.lat]);
+  if (tmpLine) map.removeLayer(tmpLine);
+  tmpLine = L.polyline(tmpPts, { color:'#ff5b6e', weight:4, dashArray:'6 6' }).addTo(map);
+  showHint(`已选 ${tmpPts.length} 个点，继续点或按「完成」`);
+});
+
+function finishLine(){
+  drawMode = false;
+  document.getElementById('btnLine').textContent = '画杆路';
+  map.getContainer().style.cursor = '';
+  hideHint();
+  if (tmpLine){ map.removeLayer(tmpLine); tmpLine = null; }
+  if (tmpPts.length < 2){ toast('至少要两个点'); return; }
+  // 地图上是 GCJ02，存回 WGS84 存（此处直接用点击坐标，误差在数十米级）
+  editing.pts = tmpPts.map(p => [p[0], p[1]]);
+  tmpPts = [];
+  openForm('line');
+}
+
+/* ============ 定位 ============ */
+function getPos(timeout = 12000){
+  return new Promise((res, rej) => {
+    if (!navigator.geolocation) return rej(new Error('no geolocation'));
+    navigator.geolocation.getCurrentPosition(
+      p => res({ lat: p.coords.latitude, lng: p.coords.longitude }),
+      e => rej(e),
+      { enableHighAccuracy:true, timeout, maximumAge:0 });
+  });
+}
+
+document.getElementById('btnLoc').onclick = () => {
+  toast('定位中…');
+  getPos().then(({lat,lng}) => {
+    const g = wgs2gcj(lng, lat);
+    map.setView([g[1], g[0]], 17);
+    L.circleMarker([g[1], g[0]], { radius:8, color:'#4ea1ff', fillColor:'#4ea1ff', fillOpacity:.5 })
+      .addTo(map).bindPopup('当前位置').openPopup();
+    toast('已定位');
+  }).catch(() => toast('定位失败（需 HTTPS 或允许权限）'));
+};
+
+/* ============ 导出 ============ */
+document.getElementById('btnExport').onclick = () => {
+  const geojson = {
+    type:'FeatureCollection',
+    features: [
+      ...db.points.map(p => ({
+        type:'Feature',
+        geometry:{ type:'Point', coordinates:[p.lng, p.lat] },
+        properties:{ kind:'point', type:p.type, typeName:typeOf(p.type).name, code:p.code, name:p.name, note:p.note, ts:p.ts }
+      })),
+      ...db.lines.map(l => ({
+        type:'Feature',
+        geometry:{ type:'LineString', coordinates:l.pts },
+        properties:{ kind:'line', type:l.type, typeName:typeOf(l.type).name, code:l.code, name:l.name, note:l.note, ts:l.ts }
+      })),
+    ]
+  };
+  const csv = ['类型,编号,名称,经度,纬度,备注']
+    .concat(db.points.map(p => [typeOf(p.type).name, p.code, p.name, p.lng, p.lat, p.note]
+      .map(v => `"${String(v??'').replace(/"/g,'""')}"`).join(',')))
+    .join('\n');
+
+  download('台账.geojson', JSON.stringify(geojson, null, 2), 'application/json');
+  setTimeout(() => download('台账.csv', '\ufeff' + csv, 'text/csv'), 400);
+  toast('已导出 GeoJSON + CSV');
+};
+
+function download(name, text, mime){
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], { type:mime }));
+  a.download = name; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 3000);
+}
+
+/* ============ 杂项 ============ */
+document.getElementById('btnList').onclick = () => document.getElementById('sheet').classList.toggle('open');
+document.getElementById('btnClose').onclick = closeSheet;
+function closeSheet(){ document.getElementById('sheet').classList.remove('open'); }
+
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function esc(s){ return String(s??'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+let toastTimer;
+function toast(msg){
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(()=>el.classList.remove('show'), 2200);
+}
+function showHint(t){ const el=document.getElementById('hint'); el.textContent=t; el.classList.add('show'); }
+function hideHint(){ document.getElementById('hint').classList.remove('show'); }
+
+/* 底图切换：双击空白处 */
+map.on('dblclick', () => {
+  satOn = !satOn;
+  if (satOn){ map.removeLayer(roads); sat.addTo(map); toast('卫星底图'); }
+  else { map.removeLayer(sat); roads.addTo(map); toast('路网底图'); }
+});
+
+
+/* 演示数据：?demo=1 */
+function seedDemo(){
+  const base = [34.095887, 102.639131];
+  const mk = (type, code, name, dlat, dlng, note) => ({
+    id: uid(), type, code, name, note: note || '',
+    lat: base[0] + dlat, lng: base[1] + dlng, ts: Date.now()
+  });
+  db.points = [
+    mk('o','O-003','塞赤寺乡政府门口', 0, 0, '288 芯光交箱'),
+    mk('f','F-012','村委旁电杆', -0.0009, 0.0007, '16 芯分纤箱'),
+    mk('j','J-007','035县道10号', 0.0011, 0.0013, '48 芯接头盒'),
+    mk('p','P-021','丁字路口电杆', 0.0004, -0.0012, '水泥杆 8m'),
+    mk('f','F-013','完小教学楼后墙', -0.0016, -0.0005, '8 芯'),
+  ];
+  db.lines = [
+    { id: uid(), type:'r', code:'G-001', name:'塞赤寺 - 乡政府 段', note:'12杆/480m',
+      pts:[[102.639131,34.095887],[102.63950,34.09610],[102.63990,34.09635],[102.64030,34.09655]], ts:Date.now() },
+    { id: uid(), type:'c', code:'C-002', name:'光交 - 完小 光缆', note:'24芯',
+      pts:[[102.639131,34.095887],[102.63890,34.09530],[102.63860,34.09470]], ts:Date.now() },
+  ];
+  save();
+}
+
+/* 启动 */
+load();
+if (new URLSearchParams(location.search).get('demo') === '1' && !db.points.length) seedDemo();
+renderAll();
+(function(){
+  const ui = new URLSearchParams(location.search).get('ui');
+  if (ui === 'list') setTimeout(()=>document.getElementById('sheet').classList.add('open'), 300);
+  if (ui === 'form') setTimeout(()=>{ editing.lat=34.095887; editing.lng=102.639131; openForm('point'); }, 300);
+})();
+if (db.points.length === 0 && db.lines.length === 0){
+  setTimeout(() => toast('点「＋ 打点」开始记录'), 600);
+}
+</script>
+</body>
+</html>
