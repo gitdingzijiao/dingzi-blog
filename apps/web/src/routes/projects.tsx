@@ -43,6 +43,13 @@ function getProjects(locale: ReturnType<typeof getCurrentLocale>): readonly Proj
   if (locale === "zh") {
     return [
       {
+        name: "线路台账（手机 PWA）",
+        description: "装维现场用的轻量记录工具，单个 HTML 文件，可安装到手机桌面、断网也能用。地图上打点记录光交箱、分纤箱、接头盒、电杆、杆路、光缆，自动读取 GPS，可拍现场照片；支持在地图上依次点拐点画杆路，数据存本地，能导出 GeoJSON（QGIS 直接打开）和 CSV（Excel 直接打开）。出门勘测现场用，野外没信号也能记。",
+        tags: ["PWA", "Leaflet", "GIS", "装维工具", "离线"],
+        href: "/lineapp/",
+        status: "live",
+      },
+      {
         name: "AI 智能绘图工具（DingDraw）",
         description: "用自然语言生成可编辑的流程图/架构图/思维导图。基于 draw.io 开源编辑器二次开发，DeepSeek 生成 draw.io 兼容 XML，支持连续对话修改与实时预览。",
         tags: ["AI", "draw.io", "DeepSeek", "全栈"],
